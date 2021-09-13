@@ -1,1 +1,340 @@
+#!/bin/bash
+# Path
+PROJ_PATH=~/TMB/DATI_R/FILE4/
+#cd $PROJ_PATH
+PATH_MANIFEST_PRONTI=~/TMB/MANIFEST_PRONTI_R/
+PATH_MANIFEST=~/TMB/DATI_R/FILE4/Manifest_R/
+PATH_SAMPLES=~/TMB/DATI_R/FILE4/TCGA/
 
+PATH_BAM_TUMOR=~/TMB/DATI_R/FILE4/TUMOR/BAM/
+PATH_BAM_BLOOD=~/TMB/DATI_R/FILE4/BLOOD/BAM/
+PATH_BAM_NORMAL=~/TMB/DATI_R/FILE4/NORMAL/BAM/
+
+
+PATH_VCF=~/TMB/DATI_R/FILE4/VCF/
+
+PATH_TXT=~/TMB/DATI_R/FILE4/TXT/
+
+PATH_TOKEN=~/TMB/TOKEN/
+PATH_GENOME_INDEX=~/TMB/
+PATH_GENOME_FASTA=~/TMB/
+
+PATH_JAVA=~/TMB/jdk1.8.0_201/bin/java
+PATH_PICARD=~/TMB/picard.jar
+PATH_GATK=~/TMB/GenomeAnalysisTK.jar
+PATH_GATK4=~/TMB/gatk-package-4.1.0.0-local.jar
+PATH_ANNOVAR=~/TMB/annovar/
+PATH_VARSCAN=~/TMB/
+
+    mkdir -p $PROJ_PATH
+    mkdir -p $PATH_MANIFEST
+    find $PATH_MANIFEST_PRONTI/  -name 'manifest_4.txt' -exec mv {} $PATH_MANIFEST \;
+
+    # Blocco istruzioni
+    for MANIFEST in $(ls -d $PATH_MANIFEST/*); do
+        if [ ! -d $PATH_SAMPLES ]; then
+        mkdir -p $PATH_SAMPLES
+        fi
+        echo "Processing manifest file $MANIFEST"
+
+    ### Scaricare il BAM da TCGA
+
+        ~/TMB/gdc-client download -t $PATH_TOKEN/* -m $PATH_MANIFEST/* -d $PATH_SAMPLES
+        echo "Download completed"
+
+    ### Spostare il file BAM in una cartella
+
+
+        if [ ! -d $PATH_BAM_TUMOR ]; then
+            mkdir -p $PATH_BAM_TUMOR
+        fi
+
+        if [ ! -d $PATH_BAM_BLOOD ]; then
+            mkdir -p $PATH_BAM_BLOOD
+        fi
+
+        if [ ! -d $PATH_BAM_NORMAL ]; then
+            mkdir -p $PATH_BAM_NORMAL
+        fi
+
+
+        find $PATH_SAMPLES/  -name '*01A*.bam' -exec mv {} $PATH_BAM_TUMOR \;
+        find $PATH_SAMPLES/  -name '*01A*.bai' -exec mv {} $PATH_BAM_TUMOR \;
+
+        find $PATH_SAMPLES/  -name '*10A*.bam' -exec mv {} $PATH_BAM_BLOOD \;
+        find $PATH_SAMPLES/  -name '*10A*.bai' -exec mv {} $PATH_BAM_BLOOD \;
+
+        find $PATH_SAMPLES/  -name '*11A*.bam' -exec mv {} $PATH_BAM_NORMAL \;
+        find $PATH_SAMPLES/  -name '*11A*.bai' -exec mv {} $PATH_BAM_NORMAL \;
+
+    done
+
+    ############################################
+    ##              Allineamento    TUMOR     ##
+    ############################################
+
+    for BAM in $(ls $PATH_BAM_TUMOR/*_Illumina*.bam); do
+        BAM_NAME_T=$(basename $BAM ".bam")
+        BAM_ANNOTATO_T=$BAM_NAME_T"_annotato.bam"
+
+        if [ ! -d $PATH_VCF ]; then
+            mkdir -p $PATH_VCF
+        fi
+
+        if [ ! -d $PATH_TXT ]; then
+            mkdir -p $PATH_TXT
+        fi
+
+        echo "TUMOR: Alignment BAM_ANNOTATO"
+
+        #$PATH_JAVA -jar $PATH_PICARD BuildBamIndex I=$PATH_BAM_TUMOR$BAM_NAME_T
+
+        $PATH_JAVA -jar $PATH_PICARD  AddOrReplaceReadGroups I=$PATH_BAM_TUMOR$BAM_NAME_T.bam O=$PATH_BAM_TUMOR$BAM_ANNOTATO_T RGID=0 RGLB=lib1 RGPL=illumina RGPU=SN166 RGSM=$BAM_NAME_T CREATE_INDEX=TRUE
+
+        #$PATH_JAVA -jar $PATH_PICARD ValidateSamFile I=$PATH_BAM_TUMOR$BAM_ANNOTATO_T
+
+
+        echo "TUMOR: Conversione completata"
+
+    done
+
+
+
+    ############################################
+    ##            Allineamento   BLOOD        ##
+    ############################################
+
+        if test="$PATH_BAM_BLOOD/*10A*.bam"; then
+        echo "BLOOD"
+
+        for BAM in $(ls $PATH_BAM_BLOOD/*_Illumina*.bam); do
+            BAM_NAME_B=$(basename $BAM ".bam")
+            BAM_ANNOTATO_B=$BAM_NAME_B"_annotato.bam"
+        done
+
+        #$PATH_JAVA -jar $PATH_PICARD BuildBamIndex I=$PATH_BAM_BLOOD$BAM_NAME_B
+
+
+
+        echo "BLOOD: Alignment $BAM_ANNOTATO"
+        $PATH_JAVA -jar $PATH_PICARD  AddOrReplaceReadGroups I=$PATH_BAM_BLOOD$BAM_NAME_B.bam O=$PATH_BAM_BLOOD$BAM_ANNOTATO_B RGID=0 RGLB=lib1 RGPL=illumina RGPU=SN166 RGSM=$BAM_NAME_B CREATE_INDEX=TRUE
+
+        #$PATH_JAVA -jar $PATH_PICARD ValidateSamFile I=$PATH_BAM_BLOOD$BAM_ANNOTATO_B
+
+
+
+
+
+        echo "BLOOD: Conversione completata"
+
+
+
+
+        ############################################
+        ##         Chiamata della varianti        ##
+        ############################################
+
+
+        echo "VCF FILE"
+
+        VCF_NAME_TB=$BAM_NAME_T"_tb.vcf.gz"
+
+        $PATH_JAVA -jar $PATH_GATK4 Mutect2 -R ~/TMB/hg38.fa -I $PATH_BAM_TUMOR$BAM_ANNOTATO_T  -tumor $BAM_NAME_T -I $PATH_BAM_BLOOD$BAM_ANNOTATO_B -normal $BAM_NAME_B -O $PATH_VCF$VCF_NAME_TB -mbq 25
+
+        #######       FILTRIAMO:       #################
+
+        for VCF in $(ls $PATH_VCF); do
+            VCF_NAME=$(echo $VCF_NAME_TB | cut -d _ -f 1 -)
+            VCF_NAME_TB_FILTERED=$VCF_NAME"_1_filtered.vcf"
+            VCF_NAME_TB_FIL_PASS=$VCF_NAME"_2_filtered_pass"
+            VCF_SOMATIC_VARIATION=$VCF_NAME"_3_som_var_tb"
+            BAM_MERGE=$VCF_NAME"_4_merge"
+            VCF_TB_FINAL=$VCF_NAME"_5_final"
+            VCF_FINAL=$VCF_NAME"_6_final"
+            TB_TXT=$VCF_NAME"_TB"
+
+        done
+
+        $PATH_JAVA -jar $PATH_GATK4 IndexFeatureFile -F $PATH_VCF$VCF_NAME_TB
+
+
+        $PATH_JAVA -jar $PATH_GATK4 FilterMutectCalls -V $PATH_VCF$VCF_NAME_TB -O $PATH_VCF$VCF_NAME_TB_FILTERED
+
+
+        #######       CREIAMO UN FILE SOLO CON I PASS    ###################
+
+
+        awk -F '\t' '{if($0 ~ /\#/) print; else if($7 == "PASS") print}' $PATH_VCF$VCF_NAME_TB_FILTERED > $PATH_VCF$VCF_NAME_TB_FIL_PASS
+
+        echo "VCF_SOMATIC_VARIATION"
+
+
+
+
+    ## da qua! Pass.vcf
+        samtools mpileup -B -f $PATH_GENOME_FASTA/hg38.fa -Q 25 -L 250 -d 250 $PATH_BAM_BLOOD$BAM_ANNOTATO_B $PATH_BAM_TUMOR$BAM_ANNOTATO_T | java -jar $PATH_VARSCAN/VarScan.v2.4.3.jar somatic -mpileup $PATH_VCF$VCF_SOMATIC_VARIATION --min-var-freq 0.10 --strand-filter 1 --output-vcf 1
+
+
+
+        $PATH_JAVA -jar $PATH_VARSCAN/VarScan.v2.4.3.jar processSomatic $PATH_VCF$VCF_SOMATIC_VARIATION.indel.vcf
+
+        $PATH_JAVA -jar $PATH_VARSCAN/VarScan.v2.4.3.jar processSomatic $PATH_VCF$VCF_SOMATIC_VARIATION.snp.vcf
+
+
+        $PATH_JAVA -jar $PATH_VARSCAN/VarScan.v2.4.3.jar somaticFilter $PATH_VCF$VCF_SOMATIC_VARIATION.snp.Somatic.hc.vcf -min-var-freq 0.10 -indel-file $PATH_VCF$VCF_SOMATIC_VARIATION.indel.vcf -output-file $PATH_VCF$VCF_SOMATIC_VARIATION.snp.Somatic.hc.filter.vcf
+
+
+        $PATH_JAVA -jar $PATH_VARSCAN/VarScan.v2.4.3.jar compare $PATH_VCF$VCF_SOMATIC_VARIATION.indel.Somatic.hc.vcf $PATH_VCF$VCF_SOMATIC_VARIATION.snp.Somatic.hc.filter.vcf merge $PATH_VCF$BAM_MERGE.vcf
+
+        $PATH_JAVA -jar $PATH_VARSCAN/VarScan.v2.4.3.jar compare $PATH_VCF$BAM_MERGE.vcf $PATH_VCF$VCF_NAME_TB_FIL_PASS intersect $PATH_VCF$VCF_TB_FINAL
+
+        echo "VCF FINAL"
+        perl $PATH_ANNOVAR/convert2annovar.pl -format vcf4old $PATH_VCF$VCF_TB_FINAL > $PATH_VCF$VCF_FINAL
+
+        # sia per tb che per tn
+
+        cd $PATH_ANNOVAR
+
+        perl annotate_variation.pl $PATH_VCF/$VCF_FINAL ./ -vcfdbfile humandb/dbsnp_146.hg38.vcf -buildver hg38 -filter -dbtype vcf
+
+        perl annotate_variation.pl -filter -dbtype cosmic88 -buildver  hg38 -out $PATH_TXT$TB_TXT $PATH_VCF$VCF_FINAL.hg38_vcf_filtered humandb/
+
+        perl annotate_variation.pl -filter -dbtype esp6500siv2_all -buildver hg38 -out $PATH_TXT$TB_TXT $PATH_TXT$TB_TXT.hg38_cosmic88_filtered humandb/
+
+        perl annotate_variation.pl -filter -dbtype 1000g2015aug_all -buildver hg38 -out $PATH_TXT$TB_TXT $PATH_TXT$TB_TXT.hg38_esp6500siv2_all_filtered humandb/
+
+        perl annotate_variation.pl -dbtype refGene -buildver hg38 -out $PATH_TXT$TB_TXT /$PATH_TXT$TB_TXT.hg38_ALL.sites.2015_08_filtered -otherinfo humandb/
+
+
+
+        sed '/^[[:blank:]]*$/d' $PATH_TXT/*.hg38_ALL.sites.2015_08_filtered | wc -l > $PATH_TXT$TB_TXT.txt
+
+
+        rm -R ~/TMB/DATI_R/FILE4/TUMOR/BAM/
+        rm -R ~/TMB/DATI_R/FILE4/BLOOD/BAM/
+
+        cd $PATH_VCF;
+        rm $VCF_NAME_TB_FILTERED;
+        rm $VCF_NAME_TB_FIL_PASS;
+        rm $VCF_SOMATIC_VARIATION;
+        rm $BAM_MERGE;
+        rm $VCF_TB_FINAL;
+
+        echo "END"
+
+    else
+    echo "NORMAL"
+
+
+        ############################################
+        ##            Allineamento   NORMAL        ##
+        ############################################
+
+        for BAM in $(ls $PATH_BAM_NORMAL/*_Illumina*.bam); do
+        BAM_NAME_N=$(basename $BAM ".bam")
+        BAM_ANNOTATO_N=$BAM_NAME_N"_annotato.bam"
+        done
+
+        $PATH_JAVA -jar $PATH_PICARD BuildBamIndex I=$PATH_BAM_NORMAL$BAM_NAME_N
+
+
+
+        echo "NORMAL: Alignment $BAM_ANNOTATO"
+        $PATH_JAVA -jar $PATH_PICARD  AddOrReplaceReadGroups I=$PATH_BAM_NORMAL$BAM_NAME_N.bam O=$PATH_BAM_NORMAL$BAM_ANNOTATO_N RGID=0 RGLB=lib1 RGPL=illumina RGPU=SN166 RGSM=$BAM_NAME_N CREATE_INDEX=TRUE
+
+        #$PATH_JAVA -jar $PATH_PICARD ValidateSamFile I=$PATH_BAM_NORMAL$BAM_ANNOTATO_N
+
+        echo "NORMAL: Conversione completata"
+
+
+
+
+        ############################################
+        ##         Chiamata della varianti        ##
+        ############################################
+
+        # samtools idxstats TCGA-F4-6704-01A-11D-1835-10_hg19_Illumina_gdc_realn_annotato.bam
+
+        echo "VCF FILE"
+
+        VCF_NAME_TN=$BAM_NAME_T"_tn.vcf.gz"
+
+        $PATH_JAVA -jar $PATH_GATK4 Mutect2 -R ~/TMB/hg38.fa -I $PATH_BAM_TUMOR$BAM_ANNOTATO_T  -tumor $BAM_NAME_T -I $PATH_BAM_NORMAL$BAM_ANNOTATO_N -normal $BAM_NAME_N -O $PATH_VCF$VCF_NAME_TN -mbq 25
+
+        #######       FILTRIAMO:       #################
+
+        for VCF in $(ls $PATH_VCF); do
+        VCF_NAME=$(echo $VCF_NAME_TN | cut -d _ -f 1 -)
+        VCF_NAME_TN_FILTERED=$VCF_NAME"_1_filtered.vcf"
+        VCF_NAME_TN_FIL_PASS=$VCF_NAME"_2_filtered_pass"
+        VCF_SOMATIC_VARIATION=$VCF_NAME"_3_som_var_tn"
+        BAM_MERGE=$VCF_NAME"_4_merge"
+        VCF_TN_FINAL=$VCF_NAME"_5_final"
+        VCF_FINAL=$VCF_NAME"_6_final"
+        TN_TXT=$VCF_NAME"_TN"
+
+        done
+
+        $PATH_JAVA -jar $PATH_GATK4 IndexFeatureFile -F $PATH_VCF$VCF_NAME_TN
+
+
+        $PATH_JAVA -jar $PATH_GATK4 FilterMutectCalls -V $PATH_VCF$VCF_NAME_TN -O $PATH_VCF$VCF_NAME_TN_FILTERED
+
+
+        #######       CREIAMO UN FILE SOLO CON I PASS    ###################
+
+
+        awk -F '\t' '{if($0 ~ /\#/) print; else if($7 == "PASS") print}' $PATH_VCF$VCF_NAME_TN_FILTERED > $PATH_VCF$VCF_NAME_TN_FIL_PASS
+
+        echo "VCF_SOMATIC_VARIATION"
+
+        samtools mpileup -B -f $PATH_GENOME_FASTA/hg38.fa -Q 25 -L 250 -d 250 $PATH_BAM_NORMAL/$BAM_ANNOTATO_N $PATH_BAM_TUMOR/$BAM_ANNOTATO_T | java -jar $PATH_VARSCAN/VarScan.v2.4.3.jar somatic -mpileup $PATH_VCF/$VCF_SOMATIC_VARIATION --min-var-freq 0.10 --strand-filter 1 --output-vcf 1
+
+
+
+        $PATH_JAVA -jar $PATH_VARSCAN/VarScan.v2.4.3.jar processSomatic $PATH_VCF$VCF_SOMATIC_VARIATION.indel.vcf
+
+        $PATH_JAVA -jar $PATH_VARSCAN/VarScan.v2.4.3.jar processSomatic $PATH_VCF$VCF_SOMATIC_VARIATION.snp.vcf
+
+
+        $PATH_JAVA -jar $PATH_VARSCAN/VarScan.v2.4.3.jar somaticFilter $PATH_VCF$VCF_SOMATIC_VARIATION.snp.Somatic.hc.vcf -min-var-freq 0.10 -indel-file $PATH_VCF$VCF_SOMATIC_VARIATION.indel.vcf -output-file $PATH_VCF$VCF_SOMATIC_VARIATION.snp.Somatic.hc.filter.vcf
+
+
+        $PATH_JAVA -jar $PATH_VARSCAN/VarScan.v2.4.3.jar compare $PATH_VCF$VCF_SOMATIC_VARIATION.indel.Somatic.hc.vcf $PATH_VCF$VCF_SOMATIC_VARIATION.snp.Somatic.hc.filter.vcf merge $PATH_VCF$BAM_MERGE.vcf
+
+        $PATH_JAVA -jar $PATH_VARSCAN/VarScan.v2.4.3.jar compare $PATH_VCF$BAM_MERGE.vcf $PATH_VCF$VCF_NAME_TN_FIL_PASS intersect $PATH_VCF$VCF_TN_FINAL
+
+        echo "VCF FINAL"
+        perl $PATH_ANNOVAR/convert2annovar.pl -format vcf4old $PATH_VCF$VCF_TN_FINAL > $PATH_VCF$VCF_FINAL
+
+        # sia per tb che per tn
+
+        cd $PATH_ANNOVAR
+
+        perl annotate_variation.pl $PATH_VCF/$VCF_FINAL ./ -vcfdbfile humandb/dbsnp_146.hg38.vcf -buildver hg38 -filter -dbtype vcf
+
+        perl annotate_variation.pl -filter -dbtype cosmic88 -buildver  hg38 -out $PATH_TXT$TN_TXT $PATH_VCF$VCF_FINAL.hg38_vcf_filtered humandb/
+
+        perl annotate_variation.pl -filter -dbtype esp6500siv2_all -buildver hg38 -out $PATH_TXT$TN_TXT $PATH_TXT$TN_TXT.hg38_cosmic88_filtered humandb/
+
+        perl annotate_variation.pl -filter -dbtype 1000g2015aug_all -buildver hg38 -out $PATH_TXT$TN_TXT $PATH_TXT$TN_TXT.hg38_esp6500siv2_all_filtered humandb/
+
+        perl annotate_variation.pl -dbtype refGene -buildver hg38 -out $PATH_TXT$TN_TXT /$PATH_TXT$TN_TXT.hg38_ALL.sites.2015_08_filtered -otherinfo humandb/
+
+
+
+        sed '/^[[:blank:]]*$/d' $PATH_TXT/*.hg38_ALL.sites.2015_08_filtered | wc -l > $PATH_TXT$TN_TXT.txt
+
+        rm -R ~/TMB/DATI_R/FILE4/TUMOR/BAM/
+        rm -R ~/TMB/DATI_R/FILE4/NORMAL/BAM/
+
+        cd $PATH_VCF;
+        rm $VCF_NAME_TN_FILTERED;
+        rm $VCF_NAME_TN_FIL_PASS;
+        rm $VCF_SOMATIC_VARIATION;
+        rm $BAM_MERGE;
+        rm $VCF_TN_FINAL;
+
+        echo "END"
+
+    fi
