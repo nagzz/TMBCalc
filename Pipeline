@@ -85,6 +85,18 @@ PATH_VARSCAN=~/TMB/
             mkdir -p $PATH_TXT
         fi
 
+##########################################################################################################################
+        #E se è paired reads?
+        samtools bam2fq $PATH_BAM/$BAM > $PATH_FASTQ/$FASTQ_NAME
+    		# Allineamento
+    		if [ -d $PATH_SAM ]; then
+    			rm -r $PATH_SAM
+    		fi
+    		mkdir -p $PATH_SAM
+    		echo "	Alignment $FASTQ_NAME"
+    		bowtie2 -x $PATH_GENOME_INDEX/hg19 -U $PATH_FASTQ/$FASTQ_NAME -S $PATH_SAM/$SAM_NAME
+##########################################################################################################################
+
         echo "TUMOR: Alignment BAM_ANNOTATO"
 
         #$PATH_JAVA -jar $PATH_PICARD BuildBamIndex I=$PATH_BAM_TUMOR$BAM_NAME_T
