@@ -1,77 +1,120 @@
 #!/bin/bash
+
+#come paramentro anche index type
+#il nome del file lo deriviamo da esso o lo inseriamo?
+usage() {
+  echo "Usage: $0 [-t/-tumor tumor sample]
+  [-n/-normal normal sample ]
+  [-i/-input input folder ]
+  [-o/-output output folder]
+  [-id/-index human index]" 1>&2 #Vedere se mi serve mettere sia la folder che il nome dell'index o va bene solo un parametro
+}
+
+exit_abnormal_code() {
+  echo "$1" 1>&2
+  # shellcheck disable=SC2086
+  exit $2
+}
+
+exit_abnormal_usage() {
+  echo "$1" 1>&2
+  usage
+  exit 1
+}
+
+exit_abnormal() {
+  usage
+  exit 1
+}
+
+while [ -n "$1" ]; do
+  case "$1" in
+  -tumor | -t)
+    tumor="$2"
+    shift
+    ;;
+  -normal | -n)
+    normal="$2"
+    shift
+    ;;
+  -input | -i)  #Si suppone che tumor e normal si trovino nella stessa cartella di input
+    input="$2"
+    shift
+    ;;
+  -output | -o)
+    output="$2"
+    shift
+    ;;
+  -index | -id)
+    index="$2"
+    shift
+    ;;
+  # -bamn | -bn)  #Da aggiungere in caso di paired end
+  #   bamn="$2"
+  #   shift
+  #   ;;
+  # -paired | -pr)
+  #   paired="$2"
+  #   echo "The value provided for paired is $paired"
+  #   if ! { [ "$paired" = "yes" ] || [ "$paired" = "no" ]; }; then
+  #     exit_abnormal_usage "Error: paired must be equal to yes or no."
+  #   fi
+  #   shift
+  #   ;;
+  *)
+    exit_abnormal_usage "Error: invalid parameter \"$1\"."
+    shift
+    ;;
+  esac
+  shift
+done
+
+
+
 # Path
-PROJ_PATH=~/TMB/DATI_R/FILE4/
-#cd $PROJ_PATH
-PATH_MANIFEST_PRONTI=~/TMB/MANIFEST_PRONTI_R/
-PATH_MANIFEST=~/TMB/DATI_R/FILE4/Manifest_R/
-PATH_SAMPLES=~/TMB/DATI_R/FILE4/TCGA/
+PROJ_PATH=$output
+PATH_SAMPLES=$input
+PATH_TUMOR=$output/tumor
+PATH_NORMAL=$output/normal
+PATH_FASTQ_TUMOR=$PATH_TUMOR/fastq
+PATH_FASTQ_NORMAL=$PATH_NORMAL/fastq
+PATH_BAM_TUMOR=$PATH_TUMOR/bam
+PATH_BAM_NORMAL=$PATH_NORMAL/bam
+PATH_VCF=$output/vcf
+PATH_TXT=$output/txt
+PATH_INDEX=$index #fasta e index sono insieme
+PATH_PROGRAM=~/program
+PATH_JAVA=$PATH_PROGRAM/jdk1.8.0_201/bin/java #inserire il path fisso appena lo ho
+PATH_PICARD=$PATH_PROGRAM/picard.jar
+PATH_GATK=$PATH_PROGRAM/GenomeAnalysisTK.jar
+PATH_GATK4=$PATH_PROGRAM/gatk-package-4.1.0.0-local.jar
+PATH_ANNOVAR=$PATH_PROGRAM/annovar
+# PATH_VARSCAN=~/program
 
-PATH_BAM_TUMOR=~/TMB/DATI_R/FILE4/TUMOR/BAM/
-PATH_BAM_BLOOD=~/TMB/DATI_R/FILE4/BLOOD/BAM/
-PATH_BAM_NORMAL=~/TMB/DATI_R/FILE4/NORMAL/BAM/
+#Mi servono la cartella "sam" e "fastq" visto che partiamo dai bam?
 
+[[ ! -d $PATH_TRIM_TUMOR ]] && mkdir "$PATH_TUMOR"
+[[ ! -d $PATH_TRIM_TUMOR ]] && mkdir "$PATH_NORMAL"
+[[ ! -d $PATH_TRIM_TUMOR ]] && mkdir "$PATH_BAM_TUMOR"
+[[ ! -d $PATH_TRIM_TUMOR ]] && mkdir "$PATH_BAM_NORMAL"
+[[ ! -d $PATH_TRIM_TUMOR ]] && mkdir "$PATH_VCF"
+[[ ! -d $PATH_TRIM_TUMOR ]] && mkdir "$PATH_TXT"
 
-PATH_VCF=~/TMB/DATI_R/FILE4/VCF/
-
-PATH_TXT=~/TMB/DATI_R/FILE4/TXT/
-
-PATH_TOKEN=~/TMB/TOKEN/
-PATH_GENOME_INDEX=~/TMB/
-PATH_GENOME_FASTA=~/TMB/
-
-PATH_JAVA=~/TMB/jdk1.8.0_201/bin/java
-PATH_PICARD=~/TMB/picard.jar
-PATH_GATK=~/TMB/GenomeAnalysisTK.jar
-PATH_GATK4=~/TMB/gatk-package-4.1.0.0-local.jar
-PATH_ANNOVAR=~/TMB/annovar/
-PATH_VARSCAN=~/TMB/
-
-    mkdir -p $PROJ_PATH
-    mkdir -p $PATH_MANIFEST
-    find $PATH_MANIFEST_PRONTI/  -name 'manifest_4.txt' -exec mv {} $PATH_MANIFEST \;
-
-    # Blocco istruzioni
-    for MANIFEST in $(ls -d $PATH_MANIFEST/*); do
-        if [ ! -d $PATH_SAMPLES ]; then
-        mkdir -p $PATH_SAMPLES
-        fi
-        echo "Processing manifest file $MANIFEST"
-
-    ### Scaricare il BAM da TCGA
-
-        ~/TMB/gdc-client download -t $PATH_TOKEN/* -m $PATH_MANIFEST/* -d $PATH_SAMPLES
-        echo "Download completed"
-
-    ### Spostare il file BAM in una cartella
-
-
-        if [ ! -d $PATH_BAM_TUMOR ]; then
-            mkdir -p $PATH_BAM_TUMOR
-        fi
-
-        if [ ! -d $PATH_BAM_BLOOD ]; then
-            mkdir -p $PATH_BAM_BLOOD
-        fi
-
-        if [ ! -d $PATH_BAM_NORMAL ]; then
-            mkdir -p $PATH_BAM_NORMAL
-        fi
-
-
-        find $PATH_SAMPLES/  -name '*01A*.bam' -exec mv {} $PATH_BAM_TUMOR \;
-        find $PATH_SAMPLES/  -name '*01A*.bai' -exec mv {} $PATH_BAM_TUMOR \;
-
-        find $PATH_SAMPLES/  -name '*10A*.bam' -exec mv {} $PATH_BAM_BLOOD \;
-        find $PATH_SAMPLES/  -name '*10A*.bai' -exec mv {} $PATH_BAM_BLOOD \;
-
-        find $PATH_SAMPLES/  -name '*11A*.bam' -exec mv {} $PATH_BAM_NORMAL \;
-        find $PATH_SAMPLES/  -name '*11A*.bai' -exec mv {} $PATH_BAM_NORMAL \;
-
-    done
 
     ############################################
-    ##              Allineamento    TUMOR     ##
+    ##        TUMOR   Alignment   ##
     ############################################
+#Imposta fastq_name
+
+    TUMOR_NAME=$(basename $tumor ".bam")
+
+    echo "Tumor conversion"
+
+    samtools bam2fq $input/$tumor > $PATH_FASTQ_TUMOR/$TUMOR_NAME.fastq
+    #E se è paired reads?
+    #Sono arrivata qui
+    echo "Starting tumor alignment"
+    bowtie2 -x $PATH_GENOME_INDEX/hg19 -U $PATH_FASTQ/$FASTQ_NAME -S $PATH_SAM/$SAM_NAME
 
     for BAM in $(ls $PATH_BAM_TUMOR/*_Illumina*.bam); do
         BAM_NAME_T=$(basename $BAM ".bam")
@@ -85,16 +128,6 @@ PATH_VARSCAN=~/TMB/
             mkdir -p $PATH_TXT
         fi
 
-##########################################################################################################################
-        #E se è paired reads?
-        samtools bam2fq $PATH_BAM/$BAM > $PATH_FASTQ/$FASTQ_NAME
-    		# Allineamento
-    		if [ -d $PATH_SAM ]; then
-    			rm -r $PATH_SAM
-    		fi
-    		mkdir -p $PATH_SAM
-    		echo "	Alignment $FASTQ_NAME"
-    		bowtie2 -x $PATH_GENOME_INDEX/hg19 -U $PATH_FASTQ/$FASTQ_NAME -S $PATH_SAM/$SAM_NAME
 ##########################################################################################################################
 
         echo "TUMOR: Alignment BAM_ANNOTATO"
