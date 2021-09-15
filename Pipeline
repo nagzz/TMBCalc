@@ -216,11 +216,11 @@ echo "Variant calling with VarScan"
 
         perl annotate_variation.pl -filter -dbtype 1000g2015aug_all -buildver hg38 -out $PATH_TXT/$TUMOR_NAME  $PATH_TXT/${TUMOR_NAME}.hg38_esp6500siv2_all_filtered humandb/
 
-        perl annotate_variation.pl -dbtype refGene -buildver hg38 -out $PATH_TXT/$TUMOR_NAME  $PATH_TXT/${TUMOR_NAME}.hg38_ALL.sites.2015_08_filtered -otherinfo humandb/
+        perl annotate_variation.pl -dbtype refGene -buildver hg38 -out $PATH_TXT/$TUMOR_NAME $PATH_TXT/${TUMOR_NAME}.hg38_ALL.sites.2015_08_filtered -otherinfo humandb/
 
 
 
         sed '/^[[:blank:]]*$/d' $PATH_TXT/*.hg38_ALL.sites.2015_08_filtered | wc -l >  $PATH_TXT/${TUMOR_NAME}.txt #Capire cosa faceva Anna QUI
-        #Aggiungere script R
+        #Aggiungere script R, però prima provarlo
 
-#Cancellazione cartelle
+#Cancellazione cartelle, da aggiungere dopo prova
