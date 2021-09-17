@@ -96,10 +96,10 @@ PATH_ANNOVAR=$PATH_PROGRAM/annovar
 
 [[ ! -d $PATH_TUMOR ]] && mkdir "$PATH_TUMOR"
 [[ ! -d $PATH_NORMAL ]] && mkdir "$PATH_NORMAL"
-[[ ! -d $PATH_FASTQ_TUMOR ]] && mkdir "$PATH_FASTQ_TUMOR"
-[[ ! -d $PATH_FASTQ_NORMAL ]] && mkdir "$PATH_FASTQ_NORMAL"
-[[ ! -d $PATH_SAM_TUMOR ]] && mkdir "$PATH_SAM_TUMOR"
-[[ ! -d $PATH_SAM_NORMAL ]] && mkdir "$PATH_SAM_NORMAL"
+# [[ ! -d $PATH_FASTQ_TUMOR ]] && mkdir "$PATH_FASTQ_TUMOR"
+# [[ ! -d $PATH_FASTQ_NORMAL ]] && mkdir "$PATH_FASTQ_NORMAL"
+# [[ ! -d $PATH_SAM_TUMOR ]] && mkdir "$PATH_SAM_TUMOR"
+# [[ ! -d $PATH_SAM_NORMAL ]] && mkdir "$PATH_SAM_NORMAL"
 [[ ! -d $PATH_BAM_TUMOR ]] && mkdir "$PATH_BAM_TUMOR"
 [[ ! -d $PATH_BAM_NORMAL ]] && mkdir "$PATH_BAM_NORMAL"
 [[ ! -d $PATH_VCF ]] && mkdir "$PATH_VCF"
@@ -114,10 +114,10 @@ echo "Analyzing sample $TUMOR_NAME"
 
     echo "Tumor conversion"
 
-    samtools bam2fq $input/$tumor > $PATH_FASTQ_TUMOR/$TUMOR_NAME.fastq
-    #E se è paired reads?
-    echo "Tumor alignment"
-    bowtie2 -x $index/hg38 -U $PATH_FASTQ_TUMOR/${TUMOR_NAME}.fastq -S $PATH_SAM_TUMOR/${TUMOR_NAME}.sam
+    # samtools bam2fq $input/$tumor > $PATH_FASTQ_TUMOR/$TUMOR_NAME.fastq
+    # #E se è paired reads?
+    # echo "Tumor alignment"
+    # bowtie2 -x $index/hg38 -U $PATH_FASTQ_TUMOR/${TUMOR_NAME}.fastq -S $PATH_SAM_TUMOR/${TUMOR_NAME}.sam
 
     echo "Add or Replace Read Groups on Tumor"
 
@@ -136,11 +136,11 @@ NORMAL_NAME=$(basename $normal ".bam")
 
 echo "Normal conversion"
 
-samtools bam2fq $input/$normal > $PATH_NORMAL_TUMOR/$NORMAL_NAME.fastq
-#E se è paired reads?
-#Sono arrivata qui
-echo "Normal alignment"
-bowtie2 -x $index/hg38 -U $PATH_NORMAL_TUMOR/${NORMAL_NAME}.fastq -S $PATH_SAM_NORMAL/${NORMAL_NAME}.sam
+# samtools bam2fq $input/$normal > $PATH_NORMAL_TUMOR/$NORMAL_NAME.fastq
+# #E se è paired reads?
+# #Sono arrivata qui
+# echo "Normal alignment"
+# bowtie2 -x $index/hg38 -U $PATH_NORMAL_TUMOR/${NORMAL_NAME}.fastq -S $PATH_SAM_NORMAL/${NORMAL_NAME}.sam
 
 echo "Add or Replace Read Groups on Normal"
 $PATH_JAVA -jar $PATH_PICARD  AddOrReplaceReadGroups I=$PATH_SAM_NORMAL/${NORMAL_NAME}.sam O=$PATH_BAM_NORMAL/${NORMAL_NAME}_annotato.bam RGID=0 RGLB=lib1 RGPL=illumina RGPU=SN166 RGSM=$NORMAL_NAME CREATE_INDEX=TRUE
