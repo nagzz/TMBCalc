@@ -117,7 +117,7 @@ echo "Analyzing sample $TUMOR_NAME"
     # samtools bam2fq $input/$tumor > $PATH_FASTQ_TUMOR/$TUMOR_NAME.fastq
     # #E se è paired reads?
     # echo "Tumor alignment"
-    # bowtie2 -x $index/hg38 -U $PATH_FASTQ_TUMOR/${TUMOR_NAME}.fastq -S $PATH_SAM_TUMOR/${TUMOR_NAME}.sam
+    # bowtie2 -x $index/GRCh38_noalt_as/GRCh38_noalt_as -U $PATH_FASTQ_TUMOR/${TUMOR_NAME}.fastq -S $PATH_SAM_TUMOR/${TUMOR_NAME}.sam
 
     echo "Add or Replace Read Groups on Tumor"
 
