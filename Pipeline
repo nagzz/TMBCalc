@@ -96,10 +96,10 @@ PATH_ANNOVAR=$PATH_PROGRAM/annovar
 
 [[ ! -d $PATH_TUMOR ]] && mkdir "$PATH_TUMOR"
 [[ ! -d $PATH_NORMAL ]] && mkdir "$PATH_NORMAL"
-# [[ ! -d $PATH_FASTQ_TUMOR ]] && mkdir "$PATH_FASTQ_TUMOR"
-# [[ ! -d $PATH_FASTQ_NORMAL ]] && mkdir "$PATH_FASTQ_NORMAL"
-# [[ ! -d $PATH_SAM_TUMOR ]] && mkdir "$PATH_SAM_TUMOR"
-# [[ ! -d $PATH_SAM_NORMAL ]] && mkdir "$PATH_SAM_NORMAL"
+[[ ! -d $PATH_FASTQ_TUMOR ]] && mkdir "$PATH_FASTQ_TUMOR"
+[[ ! -d $PATH_FASTQ_NORMAL ]] && mkdir "$PATH_FASTQ_NORMAL"
+[[ ! -d $PATH_SAM_TUMOR ]] && mkdir "$PATH_SAM_TUMOR"
+[[ ! -d $PATH_SAM_NORMAL ]] && mkdir "$PATH_SAM_NORMAL"
 [[ ! -d $PATH_BAM_TUMOR ]] && mkdir "$PATH_BAM_TUMOR"
 [[ ! -d $PATH_BAM_NORMAL ]] && mkdir "$PATH_BAM_NORMAL"
 [[ ! -d $PATH_VCF ]] && mkdir "$PATH_VCF"
@@ -114,10 +114,15 @@ echo "Analyzing sample $TUMOR_NAME"
 
     echo "Tumor conversion"
 
-    # samtools bam2fq $input/$tumor > $PATH_FASTQ_TUMOR/$TUMOR_NAME.fastq
+#Aggiungere le cancellazioni
+    #samtools bam2fq $input/$tumor > $PATH_FASTQ_TUMOR/$TUMOR_NAME.fastq
+
+    samtools sort -n -o s2/557380_normal_al.bam s2/557380_normal.bam -@ 4
+    bedtools bamtofastq -i s2/557380_normal_al.bam -fq s2/557380_normal_1.fastq -fq2 s2/557380_normal_2.fastq
+
     # #E se è paired reads?
-    # echo "Tumor alignment"
-    # bowtie2 -x $index/GRCh38_noalt_as/GRCh38_noalt_as -U $PATH_FASTQ_TUMOR/${TUMOR_NAME}.fastq -S $PATH_SAM_TUMOR/${TUMOR_NAME}.sam
+     echo "Tumor alignment"
+    bowtie2 -x $index/GRCh38_noalt_as/GRCh38_noalt_as -U $PATH_FASTQ_TUMOR/${TUMOR_NAME}.fastq -S $PATH_SAM_TUMOR/${TUMOR_NAME}.sam
 
     echo "Add or Replace Read Groups on Tumor"
 
@@ -127,7 +132,7 @@ echo "Analyzing sample $TUMOR_NAME"
     $PATH_JAVA -jar $PATH_PICARD SortSam I=$PATH_BAM_TUMOR/${TUMOR_NAME}_annotato.bam O=$PATH_BAM_TUMOR/${TUMOR_NAME}_sorted.bam SORT_ORDER=coordinate
 
     echo "BAM ordering"
-    $PATH_JAVA -jar $PATH_PICARD ReorderSam I=$PATH_BAM_TUMOR/${TUMOR_NAME}_sorted.bam O=$PATH_BAM_TUMOR/${TUMOR_NAME}_ordered.bam R=$index/hg38.fa CREATE_INDEX=TRUE
+    $PATH_JAVA -jar $PATH_PICARD ReorderSam I=$PATH_BAM_TUMOR/${TUMOR_NAME}_sorted.bam O=$PATH_BAM_TUMOR/${TUMOR_NAME}_ordered.bam SEQUENCE_DICTIONARY=$index/hg38.dict CREATE_INDEX=TRUE
 
     echo "Duplicates elimination"
     $PATH_JAVA -jar $PATH_PICARD MarkDuplicates I=$PATH_BAM_TUMOR/${TUMOR_NAME}_ordered.bam REMOVE_DUPLICATES=TRUE O=$PATH_BAM_TUMOR/${TUMOR_NAME}_nodup.bam CREATE_INDEX=TRUE M=$PATH_BAM_TUMOR/${TUMOR_NAME}_file.txt
@@ -136,11 +141,9 @@ NORMAL_NAME=$(basename $normal ".bam")
 
 echo "Normal conversion"
 
-# samtools bam2fq $input/$normal > $PATH_NORMAL_TUMOR/$NORMAL_NAME.fastq
-# #E se è paired reads?
-# #Sono arrivata qui
-# echo "Normal alignment"
-# bowtie2 -x $index/hg38 -U $PATH_NORMAL_TUMOR/${NORMAL_NAME}.fastq -S $PATH_SAM_NORMAL/${NORMAL_NAME}.sam
+ samtools bam2fq $input/$normal > $PATH_NORMAL_TUMOR/$NORMAL_NAME.fastq
+ echo "Normal alignment"
+ bowtie2 -x $index/hg38 -U $PATH_NORMAL_TUMOR/${NORMAL_NAME}.fastq -S $PATH_SAM_NORMAL/${NORMAL_NAME}.sam
 
 echo "Add or Replace Read Groups on Normal"
 $PATH_JAVA -jar $PATH_PICARD  AddOrReplaceReadGroups I=$PATH_SAM_NORMAL/${NORMAL_NAME}.sam O=$PATH_BAM_NORMAL/${NORMAL_NAME}_annotato.bam RGID=0 RGLB=lib1 RGPL=illumina RGPU=SN166 RGSM=$NORMAL_NAME CREATE_INDEX=TRUE
@@ -175,13 +178,19 @@ echo "Variant calling with GATK"
 
 echo "Variant calling with VarScan"
 
+#Fin qui ok
         samtools mpileup -B -f $index/hg38.fa -Q 25 -L 250 -d 250 $PATH_BAM_NORMAL/${NORMAL_NAME}_nodup.bam $PATH_BAM_TUMOR/${TUMOR_NAME}_nodup.bam | java -jar $PATH_VARSCAN/VarScan.v2.4.3.jar somatic -mpileup $PATH_VCF/${TUMOR_NAME}_somatic.vcf --min-var-freq 0.10 --strand-filter 1 --output-vcf 1
-        #Vedere se funziona senza la jdk
+        #Vedere se si possono aumentare i threads
+        #2 campioni con 8 threads
+        #Nella pipeline lasciare path java e inserire java nel path, ma metterlo inseribile per gli utenti in caso abbiamo versioni più alte di java.
 
+        $PATH_JAVA -jar $PATH_VARSCAN/VarScan.v2.4.3.jar processSomatic $PATH_VCF/${TUMOR_NAME}_somatic.vcf.indel
+        $PATH_JAVA -jar $PATH_VARSCAN/VarScan.v2.4.3.jar processSomatic $PATH_VCF/${TUMOR_NAME}_somatic.vcf.snp
+        $PATH_JAVA -jar $PATH_VARSCAN/VarScan.v2.4.3.jar somaticFilter $PATH_VCF/${TUMOR_NAME}_somatic.vcf..snp.Somatic.hc -min-var-freq 0.10 -indel-file
 
-        $PATH_JAVA -jar $PATH_VARSCAN/VarScan.v2.4.3.jar processSomatic $PATH_VCF/${TUMOR_NAME}_somatic.indel.vcf
-        $PATH_JAVA -jar $PATH_VARSCAN/VarScan.v2.4.3.jar processSomatic $PATH_VCF/${TUMOR_NAME}_somatic.snp.vcf
-        $PATH_JAVA -jar $PATH_VARSCAN/VarScan.v2.4.3.jar somaticFilter $PATH_VCF/${TUMOR_NAME}_somatic.snp.Somatic.hc.vcf -min-var-freq 0.10 -indel-file $PATH_VCF$VCF_SOMATIC_VARIATION.indel.vcf -output-file $PATH_VCF/${TUMOR_NAME}_somatic.snp.Somatic.hc.filter.vcf
+        #QUI
+        #Quale indel è?
+        $PATH_VCF$VCF_SOMATIC_VARIATION.indel.vcf -output-file $PATH_VCF/${TUMOR_NAME}_somatic.snp.Somatic.hc.filter.vcf
         $PATH_JAVA -jar $PATH_VARSCAN/VarScan.v2.4.3.jar compare $PATH_VCF/${TUMOR_NAME}_somatic.indel.Somatic.hc.vcf $PATH_VCF/${TUMOR_NAME}_somatic.snp.Somatic.hc.filter.vcf merge $PATH_VCF/${TUMOR_NAME}_somatic_merge.vcf
         $PATH_JAVA -jar $PATH_VARSCAN/VarScan.v2.4.3.jar compare $PATH_VCF/${TUMOR_NAME}_somatic_merge.vcf $PATH_VCF/${TUMOR_NAME}_pass.vcf intersect $PATH_VCF/${TUMOR_NAME}_intersect.vcf
 
