@@ -72,21 +72,15 @@ done
 
 
 # Path
-PROJ_PATH=$output
-PATH_SAMPLES=$input
-PATH_TUMOR=$output/tumor
-PATH_NORMAL=$output/normal
-PATH_FASTQ_TUMOR=$PATH_TUMOR/fastq
-PATH_FASTQ_NORMAL=$PATH_NORMAL/fastq
-PATH_SAM_TUMOR=$PATH_TUMOR/sam
-PATH_SAM_NORMAL=$PATH_NORMAL/sam
-PATH_BAM_TUMOR=$PATH_TUMOR/bam
-PATH_BAM_NORMAL=$PATH_NORMAL/bam
+PATH_SAM_TUMOR=$output/sam_tumor
+PATH_SAM_NORMAL=$output/sam_normal
+PATH_BAM_TUMOR=$output/bam_normal
+PATH_BAM_NORMAL=$output/bam_normal
 PATH_VCF=$output/vcf
 PATH_TXT=$output/txt
 PATH_INDEX=$index #fasta e index sono insieme
 PATH_PROGRAM=~/program #Per una versione futura questo sarà ho un parametro o una cartella che si crea scaricando i programmi
-#PATH_JAVA=$PATH_PROGRAM/jdk1.8.0_201/bin/java #inserire il path fisso appena lo ho
+PATH_JAVA=java #$PATH_PROGRAM/jdk1.8.0_201/bin/java #inserire il path fisso appena lo ho
 PATH_PICARD=$PATH_PROGRAM/picard.jar
 PATH_GATK=$PATH_PROGRAM/gatk-package-4.1.0.0-local.jar
 PATH_ANNOVAR=$PATH_PROGRAM/annovar
@@ -94,10 +88,6 @@ PATH_ANNOVAR=$PATH_PROGRAM/annovar
 
 #Mi servono la cartella "sam" e "fastq" visto che partiamo dai bam?
 
-[[ ! -d $PATH_TUMOR ]] && mkdir "$PATH_TUMOR"
-[[ ! -d $PATH_NORMAL ]] && mkdir "$PATH_NORMAL"
-[[ ! -d $PATH_FASTQ_TUMOR ]] && mkdir "$PATH_FASTQ_TUMOR"
-[[ ! -d $PATH_FASTQ_NORMAL ]] && mkdir "$PATH_FASTQ_NORMAL"
 [[ ! -d $PATH_SAM_TUMOR ]] && mkdir "$PATH_SAM_TUMOR"
 [[ ! -d $PATH_SAM_NORMAL ]] && mkdir "$PATH_SAM_NORMAL"
 [[ ! -d $PATH_BAM_TUMOR ]] && mkdir "$PATH_BAM_TUMOR"
@@ -115,14 +105,15 @@ echo "Analyzing sample $TUMOR_NAME"
     echo "Tumor conversion"
 
 #Aggiungere le cancellazioni
-    #samtools bam2fq $input/$tumor > $PATH_FASTQ_TUMOR/$TUMOR_NAME.fastq
+    samtools sort -n -o $input/${TUMOR_NAME}_al.bam $input/${TUMOR_NAME}.bam -@ 4
+    bedtools bamtofastq -i $input/${TUMOR_NAME}_al.bam -fq $input/${TUMOR_NAME}_1.fastq -fq2 $input/${TUMOR_NAME}_2.fastq
 
-    samtools sort -n -o s2/557380_normal_al.bam s2/557380_normal.bam -@ 4
-    bedtools bamtofastq -i s2/557380_normal_al.bam -fq s2/557380_normal_1.fastq -fq2 s2/557380_normal_2.fastq
+    rm $input/${TUMOR_NAME}.bam
+    rm $input/${TUMOR_NAME}_al.bam
 
-    # #E se è paired reads?
-     echo "Tumor alignment"
-    bowtie2 -x $index/GRCh38_noalt_as/GRCh38_noalt_as -U $PATH_FASTQ_TUMOR/${TUMOR_NAME}.fastq -S $PATH_SAM_TUMOR/${TUMOR_NAME}.sam
+    #Aggiungere l'opzione SE
+    echo "Tumor alignment"
+    bowtie2 -x $index/GRCh38_noalt_as/GRCh38_noalt_as -p 6 -1 $input/${TUMOR_NAME}_1.fastq -2 $input/${TUMOR_NAME}_2.fastq -S $PATH_SAM_TUMOR/${TUMOR_NAME}.sam
 
     echo "Add or Replace Read Groups on Tumor"
 
@@ -141,9 +132,15 @@ NORMAL_NAME=$(basename $normal ".bam")
 
 echo "Normal conversion"
 
- samtools bam2fq $input/$normal > $PATH_NORMAL_TUMOR/$NORMAL_NAME.fastq
+samtools sort -n -o $input/${NORMAL_NAME}_al.bam $input/${NORMAL_NAME}.bam -@ 4
+bedtools bamtofastq -i $input/${NORMAL_NAME}_al.bam -fq $input/${NORMAL_NAME}_1.fastq -fq2 $input/${NORMAL_NAME}_2.fastq
+
+rm $input/${NORMAL_NAME}.bam
+rm $input/${NORMAL_NAME}_al.bam
+
  echo "Normal alignment"
- bowtie2 -x $index/hg38 -U $PATH_NORMAL_TUMOR/${NORMAL_NAME}.fastq -S $PATH_SAM_NORMAL/${NORMAL_NAME}.sam
+ bowtie2 -x $index/GRCh38_noalt_as/GRCh38_noalt_as -p 6 -1 $input/${NORMAL_NAME}_1.fastq -2 $input/${NORMAL_NAME}_2.fastq -S $PATH_SAM_NORMAL/${NORMAL_NAME}.sam
+
 
 echo "Add or Replace Read Groups on Normal"
 $PATH_JAVA -jar $PATH_PICARD  AddOrReplaceReadGroups I=$PATH_SAM_NORMAL/${NORMAL_NAME}.sam O=$PATH_BAM_NORMAL/${NORMAL_NAME}_annotato.bam RGID=0 RGLB=lib1 RGPL=illumina RGPU=SN166 RGSM=$NORMAL_NAME CREATE_INDEX=TRUE
@@ -153,7 +150,7 @@ $PATH_JAVA -jar $PATH_PICARD  AddOrReplaceReadGroups I=$PATH_SAM_NORMAL/${NORMAL
 echo "BAM sorting"
 $PATH_JAVA -jar $PATH_PICARD SortSam I=$PATH_BAM_NORMAL/${NORMAL_NAME}_annotato.bam O=$PATH_BAM_NORMAL/${NORMAL_NAME}_sorted.bam SORT_ORDER=coordinate
 echo "BAM ordering"
-$PATH_JAVA -jar $PATH_PICARD ReorderSam I=$PATH_BAM_NORMAL/${NORMAL_NAME}_sorted.bam O=$PATH_BAM_NORMAL/${NORMAL_NAME}_ordered.bam R=$index/hg38.fa CREATE_INDEX=TRUE
+$PATH_JAVA -jar $PATH_PICARD ReorderSam I=$PATH_BAM_NORMAL/${NORMAL_NAME}_sorted.bam O=$PATH_BAM_NORMAL/${NORMAL_NAME}_ordered.bam SEQUENCE_DICTIONARY=$index/hg38.dict CREATE_INDEX=TRUE
 
 #Vedere nome index hg38, potrebbe essere ghrc38. Versione futura mettere parametro
 
@@ -163,7 +160,9 @@ $PATH_JAVA -jar $PATH_PICARD MarkDuplicates I=$PATH_BAM_NORMAL/${NORMAL_NAME}_or
 #QUI
 echo "Variant calling with GATK"
 
-        $PATH_JAVA -jar $PATH_GATK Mutect2 -R $index/hg38.fa -I $PATH_BAM_TUMOR/${TUMOR_NAME}_nodup.bam -tumor $TUMOR_NAME -I $PATH_BAM_NORMAL/${NORMAL_NAME}_nodup.bam -normal $NORMAL_NAME -O $PATH_VCF/${TUMOR_NAME}.vcf -mbq 25
+VCF_NAME=$(basename $TUMOR_NAME "_tumor.bam")
+
+        $PATH_JAVA -jar $PATH_GATK Mutect2 -R $index/hg38.fa -I $PATH_BAM_TUMOR/${TUMOR_NAME}_nodup.bam -tumor $TUMOR_NAME -I $PATH_BAM_NORMAL/${NORMAL_NAME}_nodup.bam -normal $NORMAL_NAME -O $PATH_VCF/${VCF_NAME}.vcf -mbq 25
 
         #$PATH_JAVA -jar $PATH_GATK IndexFeatureFile -F $PATH_VCF$VCF_NAME_TB #Chiedere ad Anna a che serviva questo passaggio
 
