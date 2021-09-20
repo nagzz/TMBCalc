@@ -6,7 +6,6 @@ usage() {
   echo "Usage: $0 [-t/-tumor tumor sample]
   [-n/-normal normal sample ]
   [-i/-input input folder ]
-  [-o/-output output folder]
   [-id/-index human index]" 1>&2 #Vedere se mi serve mettere sia la folder che il nome dell'index o va bene solo un parametro
 }
 
@@ -41,10 +40,6 @@ while [ -n "$1" ]; do
     input="$2"
     shift
     ;;
-  -output | -o)
-    output="$2"
-    shift
-    ;;
   -index | -id)
     index="$2"
     shift
@@ -72,12 +67,13 @@ done
 
 
 # Path
-PATH_SAM_TUMOR=$output/sam_tumor
-PATH_SAM_NORMAL=$output/sam_normal
-PATH_BAM_TUMOR=$output/bam_normal
-PATH_BAM_NORMAL=$output/bam_normal
-PATH_VCF=$output/vcf
-PATH_TXT=$output/txt
+PATH_OUTPUT=$input/output
+PATH_SAM_TUMOR=$PATH_OUTPUT/sam_tumor
+PATH_SAM_NORMAL=$PATH_OUTPUT/sam_normal
+PATH_BAM_TUMOR=$PATH_OUTPUT/bam_normal
+PATH_BAM_NORMAL=$PATH_OUTPUT/bam_normal
+PATH_VCF=$PATH_OUTPUT/vcf
+PATH_TXT=$PATH_OUTPUT/txt
 PATH_INDEX=$index #fasta e index sono insieme
 PATH_PROGRAM=~/program #Per una versione futura questo sarà ho un parametro o una cartella che si crea scaricando i programmi
 PATH_JAVA=java #$PATH_PROGRAM/jdk1.8.0_201/bin/java #inserire il path fisso appena lo ho
@@ -88,12 +84,14 @@ PATH_ANNOVAR=$PATH_PROGRAM/annovar
 
 #Mi servono la cartella "sam" e "fastq" visto che partiamo dai bam?
 
+[[ ! -d $PATH_OUTPUT ]] && mkdir "$PATH_OUTPUT"
 [[ ! -d $PATH_SAM_TUMOR ]] && mkdir "$PATH_SAM_TUMOR"
 [[ ! -d $PATH_SAM_NORMAL ]] && mkdir "$PATH_SAM_NORMAL"
 [[ ! -d $PATH_BAM_TUMOR ]] && mkdir "$PATH_BAM_TUMOR"
 [[ ! -d $PATH_BAM_NORMAL ]] && mkdir "$PATH_BAM_NORMAL"
 [[ ! -d $PATH_VCF ]] && mkdir "$PATH_VCF"
 [[ ! -d $PATH_TXT ]] && mkdir "$PATH_TXT"
+
 
 #Aggiungere cancellazione cartelle se già esistenti
 echo "Pipeline starting"
@@ -115,6 +113,9 @@ echo "Analyzing sample $TUMOR_NAME"
     echo "Tumor alignment"
     bowtie2 -x $index/GRCh38_noalt_as/GRCh38_noalt_as -p 6 -1 $input/${TUMOR_NAME}_1.fastq -2 $input/${TUMOR_NAME}_2.fastq -S $PATH_SAM_TUMOR/${TUMOR_NAME}.sam
 
+    rm $input/${TUMOR_NAME}_1.fastq
+    rm $input/${TUMOR_NAME}_2.fastq
+
     echo "Add or Replace Read Groups on Tumor"
 
     $PATH_JAVA -jar $PATH_PICARD AddOrReplaceReadGroups I=$PATH_SAM_TUMOR/${TUMOR_NAME}.sam O=$PATH_BAM_TUMOR/${TUMOR_NAME}_annotato.bam RGID=0 RGLB=lib1 RGPL=illumina RGPU=SN166 RGSM=$TUMOR_NAME CREATE_INDEX=TRUE
@@ -122,11 +123,18 @@ echo "Analyzing sample $TUMOR_NAME"
     echo "BAM sorting"
     $PATH_JAVA -jar $PATH_PICARD SortSam I=$PATH_BAM_TUMOR/${TUMOR_NAME}_annotato.bam O=$PATH_BAM_TUMOR/${TUMOR_NAME}_sorted.bam SORT_ORDER=coordinate
 
+    rm $PATH_SAM_TUMOR/${TUMOR_NAME}.sam
+
     echo "BAM ordering"
     $PATH_JAVA -jar $PATH_PICARD ReorderSam I=$PATH_BAM_TUMOR/${TUMOR_NAME}_sorted.bam O=$PATH_BAM_TUMOR/${TUMOR_NAME}_ordered.bam SEQUENCE_DICTIONARY=$index/hg38.dict CREATE_INDEX=TRUE
 
+    rm $PATH_BAM_TUMOR/${TUMOR_NAME}_annotato.bam
+
     echo "Duplicates elimination"
     $PATH_JAVA -jar $PATH_PICARD MarkDuplicates I=$PATH_BAM_TUMOR/${TUMOR_NAME}_ordered.bam REMOVE_DUPLICATES=TRUE O=$PATH_BAM_TUMOR/${TUMOR_NAME}_nodup.bam CREATE_INDEX=TRUE M=$PATH_BAM_TUMOR/${TUMOR_NAME}_file.txt
+
+    rm $PATH_BAM_TUMOR/${TUMOR_NAME}_sorted.bam
+    rm $PATH_BAM_TUMOR/${TUMOR_NAME}_ordered.bam
 
 NORMAL_NAME=$(basename $normal ".bam")
 
@@ -141,6 +149,8 @@ rm $input/${NORMAL_NAME}_al.bam
  echo "Normal alignment"
  bowtie2 -x $index/GRCh38_noalt_as/GRCh38_noalt_as -p 6 -1 $input/${NORMAL_NAME}_1.fastq -2 $input/${NORMAL_NAME}_2.fastq -S $PATH_SAM_NORMAL/${NORMAL_NAME}.sam
 
+ rm $input/${NORMAL_NAME}_1.fastq
+ rm $input/${NORMAL_NAME}_2.fastq
 
 echo "Add or Replace Read Groups on Normal"
 $PATH_JAVA -jar $PATH_PICARD  AddOrReplaceReadGroups I=$PATH_SAM_NORMAL/${NORMAL_NAME}.sam O=$PATH_BAM_NORMAL/${NORMAL_NAME}_annotato.bam RGID=0 RGLB=lib1 RGPL=illumina RGPU=SN166 RGSM=$NORMAL_NAME CREATE_INDEX=TRUE
@@ -149,13 +159,19 @@ $PATH_JAVA -jar $PATH_PICARD  AddOrReplaceReadGroups I=$PATH_SAM_NORMAL/${NORMAL
 
 echo "BAM sorting"
 $PATH_JAVA -jar $PATH_PICARD SortSam I=$PATH_BAM_NORMAL/${NORMAL_NAME}_annotato.bam O=$PATH_BAM_NORMAL/${NORMAL_NAME}_sorted.bam SORT_ORDER=coordinate
+
+rm $PATH_SAM_NORMAL/${NORMAL_NAME}.sam
+
 echo "BAM ordering"
 $PATH_JAVA -jar $PATH_PICARD ReorderSam I=$PATH_BAM_NORMAL/${NORMAL_NAME}_sorted.bam O=$PATH_BAM_NORMAL/${NORMAL_NAME}_ordered.bam SEQUENCE_DICTIONARY=$index/hg38.dict CREATE_INDEX=TRUE
 
-#Vedere nome index hg38, potrebbe essere ghrc38. Versione futura mettere parametro
+rm $PATH_BAM_NORMAL/${NORMAL_NAME}_annotato.bam
 
 echo "Duplicates elimination"
 $PATH_JAVA -jar $PATH_PICARD MarkDuplicates I=$PATH_BAM_NORMAL/${NORMAL_NAME}_ordered.bam REMOVE_DUPLICATES=TRUE O=$PATH_BAM_NORMAL/${NORMAL_NAME}_nodup.bam CREATE_INDEX=TRUE M=$PATH_BAM_NORMAL/${NORMAL_NAME}_file.txt
+
+rm $PATH_BAM_NORMAL/${NORMAL_NAME}_sorted.bam
+rm $PATH_BAM_NORMAL/${NORMAL_NAME}_ordered.bam
 
 #QUI
 echo "Variant calling with GATK"
@@ -164,54 +180,47 @@ VCF_NAME=$(basename $TUMOR_NAME "_tumor.bam")
 
         $PATH_JAVA -jar $PATH_GATK Mutect2 -R $index/hg38.fa -I $PATH_BAM_TUMOR/${TUMOR_NAME}_nodup.bam -tumor $TUMOR_NAME -I $PATH_BAM_NORMAL/${NORMAL_NAME}_nodup.bam -normal $NORMAL_NAME -O $PATH_VCF/${VCF_NAME}.vcf -mbq 25
 
-        #$PATH_JAVA -jar $PATH_GATK IndexFeatureFile -F $PATH_VCF$VCF_NAME_TB #Chiedere ad Anna a che serviva questo passaggio
-
         echo "VCF filtering"
 
-        $PATH_JAVA -jar $PATH_GATK FilterMutectCalls -V $PATH_VCF/${TUMOR_NAME}.vcf -O $PATH_VCF/${TUMOR_NAME}_filtered.vcf
+        $PATH_JAVA -jar $PATH_GATK FilterMutectCalls -V $PATH_VCF/${VCF_NAME}.vcf -O $PATH_VCF/${VCF_NAME}_filtered.vcf
 
         echo "VCF pass"
 
-        awk -F '\t' '{if($0 ~ /\#/) print; else if($7 == "PASS") print}' $PATH_VCF/${TUMOR_NAME}_filtered.vcf > $PATH_VCF/${TUMOR_NAME}_pass.vcf
+        awk -F '\t' '{if($0 ~ /\#/) print; else if($7 == "PASS") print}' $PATH_VCF/${VCF_NAME}_filtered.vcf > $PATH_VCF/${VCF_NAME}_pass.vcf
 
 
 echo "Variant calling with VarScan"
 
 #Fin qui ok
-        samtools mpileup -B -f $index/hg38.fa -Q 25 -L 250 -d 250 $PATH_BAM_NORMAL/${NORMAL_NAME}_nodup.bam $PATH_BAM_TUMOR/${TUMOR_NAME}_nodup.bam | java -jar $PATH_VARSCAN/VarScan.v2.4.3.jar somatic -mpileup $PATH_VCF/${TUMOR_NAME}_somatic.vcf --min-var-freq 0.10 --strand-filter 1 --output-vcf 1
+        samtools mpileup -B -f $index/hg38.fa -Q 25 -L 250 -d 250 $PATH_BAM_NORMAL/${NORMAL_NAME}_nodup.bam $PATH_BAM_TUMOR/${TUMOR_NAME}_nodup.bam | java -jar $PATH_VARSCAN/VarScan.v2.4.3.jar somatic -mpileup $PATH_VCF/${VCF_NAME}_somatic.vcf --min-var-freq 0.10 --strand-filter 1 --output-vcf 1
         #Vedere se si possono aumentare i threads
         #2 campioni con 8 threads
         #Nella pipeline lasciare path java e inserire java nel path, ma metterlo inseribile per gli utenti in caso abbiamo versioni più alte di java.
 
-        $PATH_JAVA -jar $PATH_VARSCAN/VarScan.v2.4.3.jar processSomatic $PATH_VCF/${TUMOR_NAME}_somatic.vcf.indel
-        $PATH_JAVA -jar $PATH_VARSCAN/VarScan.v2.4.3.jar processSomatic $PATH_VCF/${TUMOR_NAME}_somatic.vcf.snp
-        $PATH_JAVA -jar $PATH_VARSCAN/VarScan.v2.4.3.jar somaticFilter $PATH_VCF/${TUMOR_NAME}_somatic.vcf..snp.Somatic.hc -min-var-freq 0.10 -indel-file
-
-        #QUI
-        #Quale indel è?
-        $PATH_VCF$VCF_SOMATIC_VARIATION.indel.vcf -output-file $PATH_VCF/${TUMOR_NAME}_somatic.snp.Somatic.hc.filter.vcf
-        $PATH_JAVA -jar $PATH_VARSCAN/VarScan.v2.4.3.jar compare $PATH_VCF/${TUMOR_NAME}_somatic.indel.Somatic.hc.vcf $PATH_VCF/${TUMOR_NAME}_somatic.snp.Somatic.hc.filter.vcf merge $PATH_VCF/${TUMOR_NAME}_somatic_merge.vcf
-        $PATH_JAVA -jar $PATH_VARSCAN/VarScan.v2.4.3.jar compare $PATH_VCF/${TUMOR_NAME}_somatic_merge.vcf $PATH_VCF/${TUMOR_NAME}_pass.vcf intersect $PATH_VCF/${TUMOR_NAME}_intersect.vcf
+        $PATH_JAVA -jar $PATH_VARSCAN/VarScan.v2.4.3.jar processSomatic $PATH_VCF/${VCF_NAME}_somatic.vcf.indel
+        $PATH_JAVA -jar $PATH_VARSCAN/VarScan.v2.4.3.jar processSomatic $PATH_VCF/${VCF_NAME}_somatic.vcf.snp
+        $PATH_JAVA -jar $PATH_VARSCAN/VarScan.v2.4.3.jar somaticFilter $PATH_VCF/${VCF_NAME}_somatic.vcf..snp.Somatic.hc -min-var-freq 0.10 -indel-file  $PATH_VCF/${VCF_NAME}.indel.vcf -output-file $PATH_VCF/${VCF_NAME}_somatic.snp.Somatic.hc.filter.vcf
+        $PATH_JAVA -jar $PATH_VARSCAN/VarScan.v2.4.3.jar compare $PATH_VCF/${VCF_NAME}_somatic.indel.Somatic.hc.vcf $PATH_VCF/${VCF_NAME}_somatic.snp.Somatic.hc.filter.vcf merge $PATH_VCF/${VCF_NAME}_somatic_merge.vcf
+        $PATH_JAVA -jar $PATH_VARSCAN/VarScan.v2.4.3.jar compare $PATH_VCF/${VCF_NAME}_somatic_merge.vcf $PATH_VCF/${VCF_NAME}_pass.vcf intersect $PATH_VCF/${VCF_NAME}_intersect.vcf
 
         echo "VCF final creation"
-        perl $PATH_ANNOVAR/convert2annovar.pl -format vcf4old $PATH_VCF/${TUMOR_NAME}_intersect.vcf > $PATH_VCF/${TUMOR_NAME}_final.vcf
+        perl $PATH_ANNOVAR/convert2annovar.pl -format vcf4old $PATH_VCF/${VCF_NAME}_intersect.vcf > $PATH_VCF/${VCF_NAME}_final.vcf
 
         echo "Annovar annotation"
         cd $PATH_ANNOVAR
 
-        perl annotate_variation.pl $PATH_VCF/${TUMOR_NAME}_final.vcf ./ -vcfdbfile humandb/dbsnp_146.hg38.vcf -buildver hg38 -filter -dbtype vcf  #vedere se .vcf si toglie
+        perl annotate_variation.pl $PATH_VCF/${VCF_NAME}_final.vcf ./ -vcfdbfile humandb/dbsnp_146.hg38.vcf -buildver hg38 -filter -dbtype vcf  #vedere se .vcf si toglie
 
-        perl annotate_variation.pl -filter -dbtype cosmic88 -buildver  hg38 -out $PATH_TXT/$TUMOR_NAME $PATH_VCF/${TUMOR_NAME}_final.vcf.hg38_vcf_filtered humandb/
+        perl annotate_variation.pl -filter -dbtype cosmic88 -buildver  hg38 -out $PATH_TXT/${VCF_NAME} $PATH_VCF/${VCF_NAME}_final.vcf.hg38_vcf_filtered humandb/
 
-        perl annotate_variation.pl -filter -dbtype esp6500siv2_all -buildver hg38 -out $PATH_TXT/$TUMOR_NAME $PATH_TXT/${TUMOR_NAME}.hg38_cosmic88_filtered humandb/
+        perl annotate_variation.pl -filter -dbtype esp6500siv2_all -buildver hg38 -out $PATH_TXT/${VCF_NAME} $PATH_TXT/${VCF_NAME}.hg38_cosmic88_filtered humandb/
 
         perl annotate_variation.pl -filter -dbtype 1000g2015aug_all -buildver hg38 -out $PATH_TXT/$TUMOR_NAME  $PATH_TXT/${TUMOR_NAME}.hg38_esp6500siv2_all_filtered humandb/
 
-        perl annotate_variation.pl -dbtype refGene -buildver hg38 -out $PATH_TXT/$TUMOR_NAME $PATH_TXT/${TUMOR_NAME}.hg38_ALL.sites.2015_08_filtered -otherinfo humandb/
+        perl annotate_variation.pl -dbtype refGene -buildver hg38 -out $PATH_TXT/${VCF_NAME} $PATH_TXT/${VCF_NAME}.hg38_ALL.sites.2015_08_filtered -otherinfo humandb/
 
-
-
-        sed '/^[[:blank:]]*$/d' $PATH_TXT/*.hg38_ALL.sites.2015_08_filtered | wc -l >  $PATH_TXT/${TUMOR_NAME}.txt #Capire cosa faceva Anna QUI
+        sed '/^[[:blank:]]*$/d' $PATH_TXT/*.hg38_ALL.sites.2015_08_filtered | wc -l >  $PATH_TXT/${VCF_NAME}.txt #Capire cosa faceva Anna QUI
         #Aggiungere script R, però prima provarlo
 
-#Cancellazione cartelle, da aggiungere dopo prova
+        rm $PATH_BAM_NORMAL/${NORMAL_NAME}_nodup.bam
+        rm $PATH_BAM_TUMOR/${TUMOR_NAME}_nodup.bam
