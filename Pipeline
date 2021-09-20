@@ -80,9 +80,6 @@ PATH_JAVA=java #$PATH_PROGRAM/jdk1.8.0_201/bin/java #inserire il path fisso appe
 PATH_PICARD=$PATH_PROGRAM/picard.jar
 PATH_GATK=$PATH_PROGRAM/gatk-package-4.1.0.0-local.jar
 PATH_ANNOVAR=$PATH_PROGRAM/annovar
-# PATH_VARSCAN=~/program
-
-#Mi servono la cartella "sam" e "fastq" visto che partiamo dai bam?
 
 [[ ! -d $PATH_OUTPUT ]] && mkdir "$PATH_OUTPUT"
 [[ ! -d $PATH_SAM_TUMOR ]] && mkdir "$PATH_SAM_TUMOR"
@@ -204,18 +201,18 @@ echo "Variant calling with VarScan"
         $PATH_JAVA -jar $PATH_VARSCAN/VarScan.v2.4.3.jar compare $PATH_VCF/${VCF_NAME}_somatic_merge.vcf $PATH_VCF/${VCF_NAME}_pass.vcf intersect $PATH_VCF/${VCF_NAME}_intersect.vcf
 
         echo "VCF final creation"
-        perl $PATH_ANNOVAR/convert2annovar.pl -format vcf4old $PATH_VCF/${VCF_NAME}_intersect.vcf > $PATH_VCF/${VCF_NAME}_final.vcf
+        perl $PATH_ANNOVAR/convert2annovar.pl -format vcf4old $PATH_VCF/${VCF_NAME}_intersect.vcf -outfile $PATH_VCF/${VCF_NAME}_final.vcf -includeinfo
 
         echo "Annovar annotation"
         cd $PATH_ANNOVAR
 
-        perl annotate_variation.pl $PATH_VCF/${VCF_NAME}_final.vcf ./ -vcfdbfile humandb/dbsnp_146.hg38.vcf -buildver hg38 -filter -dbtype vcf  #vedere se .vcf si toglie
+        perl annotate_variation.pl $PATH_VCF/${VCF_NAME}_final.vcf ./ -vcfdbfile humandb/dbsnp_146.hg38.vcf -buildver hg38 -filter -dbtype vcf
 
         perl annotate_variation.pl -filter -dbtype cosmic88 -buildver  hg38 -out $PATH_TXT/${VCF_NAME} $PATH_VCF/${VCF_NAME}_final.vcf.hg38_vcf_filtered humandb/
 
         perl annotate_variation.pl -filter -dbtype esp6500siv2_all -buildver hg38 -out $PATH_TXT/${VCF_NAME} $PATH_TXT/${VCF_NAME}.hg38_cosmic88_filtered humandb/
 
-        perl annotate_variation.pl -filter -dbtype 1000g2015aug_all -buildver hg38 -out $PATH_TXT/$TUMOR_NAME  $PATH_TXT/${TUMOR_NAME}.hg38_esp6500siv2_all_filtered humandb/
+        perl annotate_variation.pl -filter -dbtype 1000g2015aug_all -buildver hg38 -out $PATH_TXT/$TUMOR_NAME $PATH_TXT/${TUMOR_NAME}.hg38_esp6500siv2_all_filtered humandb/
 
         perl annotate_variation.pl -dbtype refGene -buildver hg38 -out $PATH_TXT/${VCF_NAME} $PATH_TXT/${VCF_NAME}.hg38_ALL.sites.2015_08_filtered -otherinfo humandb/
 
@@ -224,3 +221,6 @@ echo "Variant calling with VarScan"
 
         rm $PATH_BAM_NORMAL/${NORMAL_NAME}_nodup.bam
         rm $PATH_BAM_TUMOR/${TUMOR_NAME}_nodup.bam
+
+        cp $PATH_TXT/${VCF_NAME}.txt tmb/
+        cp $PATH_TXT/${VCF_NAME}.variant_function vcf/ 
