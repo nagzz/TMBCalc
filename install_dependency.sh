@@ -20,6 +20,7 @@ cd
 cd index
 wget https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/hg38.fa.gz
 gunzip hg38.fa.gz
+samtools faidx hg38.fa
 wget https://storage.googleapis.com/gcp-public-data--broad-references/hg19/v0/Homo_sapiens_assembly19.fasta
 mv Homo_sapiens_assembly19.fasta hg19.fa
 samtools faidx hg19.fa
