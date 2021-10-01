@@ -1,3 +1,14 @@
+wget https://ftp-trace.ncbi.nlm.nih.gov/sra/sdk/2.11.1/sratoolkit.2.11.1-ubuntu64.tar.gz
+tar xzf sratoolkit.2.11.1-ubuntu64.tar.gz
+cd sratoolkit.2.11.1-ubuntu64/bin
+./vdb-config -i
+./prefetch --ngc /mnt/c/Users/gretu/Documents/amazon/prj_29701.ngc SRR442783
+mv SRR1234567_dbgap_#####.sra SRR1234567.sra
+./sam-dump --ngc /mnt/c/Users/gretu/Documents/amazon/prj_29701.ngc /home/grete/ncbi/public/sra/SRR442783.sra --output-file SRR.bam
+#sam-dump SRR5799988 | samtools view -bS - > GSM2692389.bam
+#sam-dump C:\Users\Desktop\sratoolkit.2.10.8-win64\bin\ncbi\SRA\sra\GSM2692389.sra | samtools view -bS - > GSM2692389.bam
+#Install crossmap
+
 sudo apt install samtools
 sudo apt install bowtie2
 sudo apt install awscli
