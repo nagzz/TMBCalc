@@ -2,18 +2,18 @@ wget https://ftp-trace.ncbi.nlm.nih.gov/sra/sdk/2.11.1/sratoolkit.2.11.1-ubuntu6
 tar xzf sratoolkit.2.11.1-ubuntu64.tar.gz
 cd sratoolkit.2.11.1-ubuntu64/bin
 ./vdb-config -i
-./prefetch --ngc /mnt/c/Users/gretu/Documents/amazon/prj_29701.ngc SRR442783
+./prefetch --ngc ~/prj_29701.ngc SRR443498
 mv SRR1234567_dbgap_#####.sra SRR1234567.sra
 ./sam-dump --ngc /mnt/c/Users/gretu/Documents/amazon/prj_29701.ngc /home/grete/ncbi/public/sra/SRR442783.sra --output-file SRR.bam
 #sam-dump SRR5799988 | samtools view -bS - > GSM2692389.bam
 #sam-dump C:\Users\Desktop\sratoolkit.2.10.8-win64\bin\ncbi\SRA\sra\GSM2692389.sra | samtools view -bS - > GSM2692389.bam
 #Install crossmap
 
-sudo apt install samtools
-sudo apt install bowtie2
-sudo apt install awscli
-aws s3 cp s3://unictbcd/sra_metadata_e225f7a4-9631-4989-9e73-47f418b1cbca.csv ./
-aws s3 cp s3://unictbcd/sra_metadata_752098e1-5c7d-4443-a1f3-e71df1581892.csv ./
+sudo apt install -y samtools
+sudo apt install -y bowtie2
+sudo apt install -y awscli
+# aws s3 cp s3://unictbcd/sra_metadata_e225f7a4-9631-4989-9e73-47f418b1cbca.csv ./
+# aws s3 cp s3://unictbcd/sra_metadata_752098e1-5c7d-4443-a1f3-e71df1581892.csv ./
 
 
 #!/bin/bash
@@ -37,8 +37,8 @@ mv Homo_sapiens_assembly19.fasta hg19.fa
 samtools faidx hg19.fa
 java -jar ~/program/picard.jar CreateSequenceDictionary R=hg19.fa O=hg19.dict
 wget http://hgdownload.soe.ucsc.edu/goldenPath/hg19/liftOver/hg19ToHg38.over.chain.gz
-
 cd
+cd program
 wget http://www.openbioinformatics.org/annovar/download/0wgxR2rIVP/annovar.latest.tar.gz
 tar xzf annovar.latest.tar.gz
 
@@ -46,3 +46,4 @@ cd program/annovar
 perl annotate_variation.pl -downdb -webfrom annovar 1000g2015aug humandb -buildver hg38
 perl annotate_variation.pl -downdb -webfrom annovar refgene humandb -buildver hg38
 perl annotate_variation.pl -downdb -webfrom annovar esp6500siv2_all humandb -buildver hg38
+ls
