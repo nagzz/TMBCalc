@@ -1,10 +1,22 @@
 wget https://ftp-trace.ncbi.nlm.nih.gov/sra/sdk/2.11.1/sratoolkit.2.11.1-ubuntu64.tar.gz
 tar xzf sratoolkit.2.11.1-ubuntu64.tar.gz
+
+mkdir s30
 cd sratoolkit.2.11.1-ubuntu64/bin
-./vdb-config -i
-./prefetch --ngc ~/prj_29701.ngc SRR444188
-mv SRR1234567_dbgap_*.sra SRR1234567.sra
-./sam-dump --ngc ~/prj_29701.ngc ~/SRR/sra/SRR444009.sra --output-file s6/SRR444009.sam
+#./vdb-config -i
+./prefetch --ngc ~/prj_29701.ngc SRR443891
+mv ~/SRR/sra/SRR443891_dbGaP-*.sra  ~/SRR/sra/SRR443891.sra
+./sam-dump --ngc ~/prj_29701.ngc ~/SRR/sra/SRR443891.sra --output-file ~/s30/SRR443891.sam
+cd
+aws s3 cp s3://unictbcd/SRR442820/557427_ordered.bam s30/
+aws s3 cp s3://unictbcd/SRR442820/557427_ordered.bai s30/
+mkdir s30/output
+mkdir s30/output/bam_normal
+mv s30/557427_ordered.bai s30/output/bam_normal/
+mv s30/557427_ordered.bam s30/output/bam_normal/
+mv s30/SRR443891.sam s30/557427_tumor.sam
+bash pipeline_sing_tum.bash -f file/s30.txt
+ls
 #sam-dump SRR5799988 | samtools view -bS - > GSM2692389.bam
 #sam-dump C:\Users\Desktop\sratoolkit.2.10.8-win64\bin\ncbi\SRA\sra\GSM2692389.sra | samtools view -bS - > GSM2692389.bam
 #Install crossmap
