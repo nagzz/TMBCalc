@@ -2,9 +2,9 @@ wget https://ftp-trace.ncbi.nlm.nih.gov/sra/sdk/2.11.1/sratoolkit.2.11.1-ubuntu6
 tar xzf sratoolkit.2.11.1-ubuntu64.tar.gz
 cd sratoolkit.2.11.1-ubuntu64/bin
 ./vdb-config -i
-./prefetch --ngc ~/prj_29701.ngc SRR443498
-mv SRR1234567_dbgap_#####.sra SRR1234567.sra
-./sam-dump --ngc /mnt/c/Users/gretu/Documents/amazon/prj_29701.ngc /home/grete/ncbi/public/sra/SRR442783.sra --output-file SRR.bam
+./prefetch --ngc ~/prj_29701.ngc SRR444188
+mv SRR1234567_dbgap_*.sra SRR1234567.sra
+./sam-dump --ngc ~/prj_29701.ngc ~/SRR/sra/SRR444009.sra --output-file s6/SRR444009.sam
 #sam-dump SRR5799988 | samtools view -bS - > GSM2692389.bam
 #sam-dump C:\Users\Desktop\sratoolkit.2.10.8-win64\bin\ncbi\SRA\sra\GSM2692389.sra | samtools view -bS - > GSM2692389.bam
 #Install crossmap
@@ -32,9 +32,11 @@ cd index
 wget https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/hg38.fa.gz
 gunzip hg38.fa.gz
 samtools faidx hg38.fa
+java -jar ~/program/picard.jar CreateSequenceDictionary R=hg38.fa O=hg38.dict
 wget https://storage.googleapis.com/gcp-public-data--broad-references/hg19/v0/Homo_sapiens_assembly19.fasta
 mv Homo_sapiens_assembly19.fasta hg19.fa
 samtools faidx hg19.fa
+sudo apt install -y openjdk-8-jre
 java -jar ~/program/picard.jar CreateSequenceDictionary R=hg19.fa O=hg19.dict
 wget http://hgdownload.soe.ucsc.edu/goldenPath/hg19/liftOver/hg19ToHg38.over.chain.gz
 cd
