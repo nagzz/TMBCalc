@@ -1,21 +1,21 @@
 wget https://ftp-trace.ncbi.nlm.nih.gov/sra/sdk/2.11.1/sratoolkit.2.11.1-ubuntu64.tar.gz
 tar xzf sratoolkit.2.11.1-ubuntu64.tar.gz
 
-mkdir s63
+mkdir s84
 cd sratoolkit.2.11.1-ubuntu64/bin
 #./vdb-config -i
-./prefetch --ngc ~/prj_29701.ngc SRR444502   #--max-size 100G
-mv ~/SRR/sra/SRR444502_dbGaP-*.sra  ~/SRR/sra/SRR444502.sra
-./sam-dump --ngc ~/prj_29701.ngc ~/SRR/sra/SRR444502.sra --output-file ~/s63/SRR444502.sam
+./prefetch --ngc ~/prj_29701.ngc SRR443395   #--max-size 100G
+mv ~/SRR/sra/SRR443395_dbGaP-*.sra  ~/SRR/sra/SRR443395.sra
+./sam-dump --ngc ~/prj_29701.ngc ~/SRR/sra/SRR443395.sra --output-file ~/s84/SRR443395.sam
 cd
-aws s3 cp s3://unictbcd/SRR443392/557463_ordered.bam s63/
-aws s3 cp s3://unictbcd/SRR443392/557463_ordered.bai s63/
-mkdir s63/output
-mkdir s63/output/bam_normal
-mv s63/557463_ordered.bai s63/output/bam_normal/
-mv s63/557463_ordered.bam s63/output/bam_normal/
-mv s63/SRR444502.sam s63/557463_tumor.sam
-bash pipeline_sing_tum.bash -f file/s63.txt
+aws s3 cp s3://unictbcd/SRR442825/557462_ordered.bam s84/
+aws s3 cp s3://unictbcd/SRR442825/557462_ordered.bai s84/
+mkdir s84/output
+mkdir s84/output/bam_tumor
+mv s84/557462_ordered.bai s84/output/bam_tumor/
+mv s84/557462_ordered.bam s84/output/bam_tumor/
+mv s84/SRR443395.sam s84/557462_normal.sam
+bash pipeline_sing_nor.bash -f file/s84.txt
 ls
 #sam-dump SRR5799988 | samtools view -bS - > GSM2692389.bam
 #sam-dump C:\Users\Desktop\sratoolkit.2.10.8-win64\bin\ncbi\SRA\sra\GSM2692389.sra | samtools view -bS - > GSM2692389.bam
