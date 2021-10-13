@@ -1,58 +1,26 @@
-wget https://ftp-trace.ncbi.nlm.nih.gov/sra/sdk/2.11.1/sratoolkit.2.11.1-ubuntu64.tar.gz
-tar xzf sratoolkit.2.11.1-ubuntu64.tar.gz
-
-mkdir s34
-cd sratoolkit.2.11.1-ubuntu64/bin
-#./vdb-config -i
-./prefetch --ngc ~/prj_29701.ngc SRR443397   #--max-size 100G
-mv ~/SRR/sra/SRR443397_dbGaP-*.sra  ~/SRR/sra/SRR443397.sra
-./sam-dump --ngc ~/prj_29701.ngc ~/SRR/sra/SRR443397.sra --output-file ~/s34/SRR443397.sam
-cd
-aws s3 cp s3://unictbcd/SRR443381/557455_ordered.bam s34/
-aws s3 cp s3://unictbcd/SRR443381/557455_ordered.bai s34/
-mkdir s34/output
-mkdir s34/output/bam_normal
-mv s34/557455_ordered.bai s34/output/bam_normal/
-mv s34/557455_ordered.bam s34/output/bam_normal/
-mv s34/SRR443397.sam s34/557455_tumor.sam
-bash pipeline_tum.bash -f file/s34.txt
-ls
-#sam-dump SRR5799988 | samtools view -bS - > GSM2692389.bam
-#sam-dump C:\Users\Desktop\sratoolkit.2.10.8-win64\bin\ncbi\SRA\sra\GSM2692389.sra | samtools view -bS - > GSM2692389.bam
-#Install crossmap
-
-
-
-cd sratoolkit.2.11.1-ubuntu64/bin
-#./vdb-config -i
-./prefetch --ngc ~/prj_29701.ngc SRR443397   #--max-size 100G
-mv ~/SRR/sra/SRR443397_dbGaP-*.sra  ~/SRR/sra/SRR443397.sra
-./sam-dump --ngc ~/prj_29701.ngc ~/SRR/sra/SRR443397.sra --output-file ~/s78/SRR443397.sam
-cd
-mv s78/SRR443397.sam s78/557467_normal.sam
-bash pipeline_nor.bash -f file/s78.txt
-
-wget https://ftp-trace.ncbi.nlm.nih.gov/sra/sdk/2.11.1/sratoolkit.2.11.1-ubuntu64.tar.gz
-tar xzf sratoolkit.2.11.1-ubuntu64.tar.gz
-sudo apt install -y samtools
-sudo apt install -y bowtie2
-sudo apt install -y awscli
-# aws s3 cp s3://unictbcd/sra_metadata_e225f7a4-9631-4989-9e73-47f418b1cbca.csv ./
-# aws s3 cp s3://unictbcd/sra_metadata_752098e1-5c7d-4443-a1f3-e71df1581892.csv ./
-
-
+#Before launching the install dependency install Annovar!
+#Va bene perchi ha i sudo sennò cercare i corrispettivi di anaconda e creare una divisione tra sudo e anaconda come paramentro
+#Parametro per CrossMap
+#Path per dove creare index e programmi
+#Creareindex si o no? dipende dall'utente, magari li ha
 #!/bin/bash
-mkdir index
-mkdir program
 
-wget https://ftp-trace.ncbi.nlm.nih.gov/sra/sdk/2.11.1/sratoolkit.2.11.1-ubuntu64.tar.gz
-tar xzf sratoolkit.2.11.1-ubuntu64.tar.gz
+PROJ_PATH=$path
+
+mkdir $PROJ_PATH/index
+mkdir $PROJ_PATH/program
+
+if($perm == "yes") then; #Controlla se ho scritto l'if giusto
 sudo apt install -y samtools
 sudo apt install -y bowtie2
 sudo apt install -y awscli
 sudo apt install -y python3-pip
 sudo apt install -y unzip
 sudo pip3 install CrossMap
+else
+  conda install
+  #installazioni conda - inserire nella guida da dove si installa anaconda
+fi
 
 cd program
 wget https://github.com/broadinstitute/picard/releases/download/2.26.2/picard.jar

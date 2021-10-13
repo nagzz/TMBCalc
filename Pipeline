@@ -6,7 +6,8 @@ usage() {
   echo "Usage: $0 [-t/-tumor tumor sample]
   [-n/-normal normal sample ]
   [-i/-input input folder ]
-  [-id/-index human index]" 1>&2 #Vedere se mi serve mettere sia la folder che il nome dell'index o va bene solo un parametro
+  [-id/-index human index]
+  [-p/-pr program folder]" 1>&2 #Vedere se mi serve mettere sia la folder che il nome dell'index o va bene solo un parametro
 }
 
 exit_abnormal_code() {
@@ -75,8 +76,8 @@ PATH_BAM_NORMAL=$PATH_OUTPUT/bam_normal
 PATH_VCF=$PATH_OUTPUT/vcf
 PATH_TXT=$PATH_OUTPUT/txt
 PATH_INDEX=$index #fasta e index sono insieme
-PATH_PROGRAM=~/program #Per una versione futura questo sarà ho un parametro o una cartella che si crea scaricando i programmi
-PATH_JAVA=java #$PATH_PROGRAM/jdk1.8.0_201/bin/java #inserire il path fisso appena lo ho
+PATH_PROGRAM=$program #Per una versione futura questo sarà ho un parametro o una cartella che si crea scaricando i programmi
+PATH_JAVA=java #$PATH_PROGRAM/jdk1.8.0_201/bin/java #inserire il path fisso appena lo ho %Inserire lo scaricamento della jdk open
 PATH_PICARD=$PATH_PROGRAM/picard.jar
 PATH_GATK=$PATH_PROGRAM/gatk-package-4.1.0.0-local.jar
 PATH_ANNOVAR=$PATH_PROGRAM/annovar
@@ -223,4 +224,4 @@ echo "Variant calling with VarScan"
         rm $PATH_BAM_TUMOR/${TUMOR_NAME}_nodup.bam
 
         cp $PATH_TXT/${VCF_NAME}.txt tmb/
-        cp $PATH_TXT/${VCF_NAME}.variant_function vcf/ 
+        cp $PATH_TXT/${VCF_NAME}.variant_function vcf/
