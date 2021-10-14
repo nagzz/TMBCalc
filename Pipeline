@@ -7,7 +7,8 @@ usage() {
   [-n/-normal normal sample ]
   [-i/-input input folder ]
   [-id/-index human index]
-  [-p/-pr program folder]" 1>&2 #Vedere se mi serve mettere sia la folder che il nome dell'index o va bene solo un parametro
+  [-p/-pr program folder]
+  [-j/-jv java]" 1>&2 #Vedere se mi serve mettere sia la folder che il nome dell'index o va bene solo un parametro
 }
 
 exit_abnormal_code() {
@@ -45,6 +46,14 @@ while [ -n "$1" ]; do
     index="$2"
     shift
     ;;
+  -program | -p)
+    program="$2"
+    shift
+    ;;
+  -jv | -j)
+    jv="$2"
+    shift
+    ;;
   # -bamn | -bn)  #Da aggiungere in caso di paired end
   #   bamn="$2"
   #   shift
@@ -77,7 +86,7 @@ PATH_VCF=$PATH_OUTPUT/vcf
 PATH_TXT=$PATH_OUTPUT/txt
 PATH_INDEX=$index #fasta e index sono insieme
 PATH_PROGRAM=$program #Per una versione futura questo sarà ho un parametro o una cartella che si crea scaricando i programmi
-PATH_JAVA=java #$PATH_PROGRAM/jdk1.8.0_201/bin/java #inserire il path fisso appena lo ho %Inserire lo scaricamento della jdk open
+PATH_JAVA=$jv #$PATH_PROGRAM/jdk1.8.0_201/bin/java #inserire il path fisso appena lo ho %Inserire lo scaricamento della jdk open
 PATH_PICARD=$PATH_PROGRAM/picard.jar
 PATH_GATK=$PATH_PROGRAM/gatk-package-4.1.0.0-local.jar
 PATH_ANNOVAR=$PATH_PROGRAM/annovar
