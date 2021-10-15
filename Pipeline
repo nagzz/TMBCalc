@@ -1,19 +1,23 @@
 #!/bin/bash
 
+#inserire l'informazione sul gzip o l'inserimento passo per passo dei campioni
 #come paramentro anche index type
 #il nome del file lo deriviamo da esso o lo inseriamo?
 usage() {
   echo "Usage: $0 [-t/-tumor tumor sample]
   [-n/-normal normal sample ]
+  [-tp/-type sample type, can be fastq or bam]
   [-i/-input input folder ]
+  [-pr/-paired specify if the samples are paired end or not]
   [-id/-index human index]
-  [-p/-pr program folder]
-  [-j/-jv java]" 1>&2 #Vedere se mi serve mettere sia la folder che il nome dell'index o va bene solo un parametro
+  [-if/-ifolder index folder]
+  [-p/-program program folder]
+  [-j/-jv java]
+  [-th/-threads number of bowtie2 threads, leave 1 if you are uncertain]" 1>&2
 }
 
 exit_abnormal_code() {
   echo "$1" 1>&2
-  # shellcheck disable=SC2086
   exit $2
 }
 
@@ -32,40 +36,66 @@ while [ -n "$1" ]; do
   case "$1" in
   -tumor | -t)
     tumor="$2"
+    echo "The value provided for tumor sample name is $tumor"
     shift
     ;;
   -normal | -n)
     normal="$2"
+    echo "The value provided for normal sample name is $normal"
     shift
     ;;
   -input | -i)  #Si suppone che tumor e normal si trovino nella stessa cartella di input
     input="$2"
+    echo "The value provided for input folder is $input"
     shift
     ;;
   -index | -id)
     index="$2"
+    echo "The value provided for index is $index"
+    shift
+    ;;
+  -ifolder | -if)
+    ifolder="$2"
+    echo "The value provided for index folder is $ifolder"
     shift
     ;;
   -program | -p)
     program="$2"
+    echo "The value provided for program is $program"
     shift
     ;;
   -jv | -j)
     jv="$2"
+    echo "The value provided for java is $jv"
     shift
     ;;
-  # -bamn | -bn)  #Da aggiungere in caso di paired end
-  #   bamn="$2"
-  #   shift
-  #   ;;
-  # -paired | -pr)
-  #   paired="$2"
-  #   echo "The value provided for paired is $paired"
-  #   if ! { [ "$paired" = "yes" ] || [ "$paired" = "no" ]; }; then
-  #     exit_abnormal_usage "Error: paired must be equal to yes or no."
-  #   fi
-  #   shift
-  #   ;;
+  -paired | -pr)
+    paired="$2"
+    echo "The value provided for paired is $paired"
+    if ! { [ "$paired" = "yes" ] || [ "$paired" = "no" ]; }; then
+      exit_abnormal_usage "Error: paired must be equal to yes or no."
+    fi
+    shift
+    ;;
+  -type | -tp)
+    type="$2"
+    echo "The value provided for paired is $type"
+    if ! { [ "$type" = "yes" ] || [ "$type" = "no" ]; }; then
+      exit_abnormal_usage "Error: type must be equal to fastq or bam."
+    fi
+    shift
+    ;;
+  -threads | -th)
+    threads="$2"
+    MAX_PROC=$(nproc)
+    echo "The value provided for threads is $threads"
+    if ((threads <= 0)); then
+      exit_abnormal_usage "Error: Threads must be greater than zero."
+    elif ((threads > MAX_PROC)); then
+      exit_abnormal_usage "Error: Thread number is greater than the maximum value ($MAX_PROC)."
+    fi
+    shift
+    ;;
   *)
     exit_abnormal_usage "Error: invalid parameter \"$1\"."
     shift
@@ -75,8 +105,11 @@ while [ -n "$1" ]; do
 done
 
 
+if [[ -z "$input" ]] || [[ -z "$tumor" ]] || [[ -z "$normal" ]] || [[ -z "$index" ]] || [[ -z "$ifolder" ]] || [[ -z "$program" ]] || [[ -z "$paired" ]] || [[ -z "$type" ]] || [[ -z "$java" ]] || [[ -z "$threads" ]]; then
+  exit_abnormal_usage "All parameters must be passed"
+fi
 
-# Path
+
 PATH_OUTPUT=$input/output
 PATH_SAM_TUMOR=$PATH_OUTPUT/sam_tumor
 PATH_SAM_NORMAL=$PATH_OUTPUT/sam_normal
@@ -84,11 +117,12 @@ PATH_BAM_TUMOR=$PATH_OUTPUT/bam_normal
 PATH_BAM_NORMAL=$PATH_OUTPUT/bam_normal
 PATH_VCF=$PATH_OUTPUT/vcf
 PATH_TXT=$PATH_OUTPUT/txt
-PATH_INDEX=$index #fasta e index sono insieme
-PATH_PROGRAM=$program #Per una versione futura questo sarà ho un parametro o una cartella che si crea scaricando i programmi
-PATH_JAVA=$jv #$PATH_PROGRAM/jdk1.8.0_201/bin/java #inserire il path fisso appena lo ho %Inserire lo scaricamento della jdk open
+PATH_INDEX=$ifolder
+PATH_PROGRAM=$program
+PATH_JAVA=$jv
 PATH_PICARD=$PATH_PROGRAM/picard.jar
 PATH_GATK=$PATH_PROGRAM/gatk-package-4.1.0.0-local.jar
+PATH_VARSCAN=$PATH_PROGRAM/VarScan.v2.4.3.jar
 PATH_ANNOVAR=$PATH_PROGRAM/annovar
 
 [[ ! -d $PATH_OUTPUT ]] && mkdir "$PATH_OUTPUT"
@@ -100,7 +134,26 @@ PATH_ANNOVAR=$PATH_PROGRAM/annovar
 [[ ! -d $PATH_TXT ]] && mkdir "$PATH_TXT"
 
 
-#Aggiungere cancellazione cartelle se già esistenti
+if [ "$type" == "fastq" ]; then
+  TUMOR_NAME=$(basename $tumor ".fastq")
+  NORMAL_NAME=$(basename $normal ".fastq")
+  if [[ "$paired" == "yes" ]]; then
+    echo "Trimming"
+    if ((threads > 7)); then
+      RT=6
+    else
+      RT=$threads
+    fi
+    $PATH_PROGRAM/TrimGalore-0.6.6/trim_galore -j "$RT" --paired --dont_gzip -o "$input/" "$input/${TUMOR_NAME}_1.fastq" "$input/${TUMOR_NAME}_2.fastq" || exit_abnormal_code "Unable to trim input file" 101
+  echo "Alignment"
+  #Potrei togliere il path delle folder che tanto nel crea dipendenze sono create nel proj path e fare inserire solo quello
+  #cambiare il nome del GRCh38
+    bowtie2 -x $ifolder/GRCh38_noalt_as/GRCh38_noalt_as -p $RT -1 $input/${TUMOR_NAME}_val_1.fq -2 $input/${TUMOR_NAME}_val_2.fq -S $PATH_SAM_TUMOR || exit_abnormal_code "Unable to align input file" 102
+  elif [[ "$paired" == "no" ]]; then
+    bowtie2 -p "$threads" -x "$ifolder/$index" -U "$PATH_TRIM/${FASTQ1_NAME}_trimmed.fq" -S "$PATH_SAM/aligned.sam" || exit_abnormal_code "Unable to align input file" 102
+  fi
+fi
+
 echo "Pipeline starting"
 
     TUMOR_NAME=$(basename $tumor ".bam")  #Vedere se si deve eliminare qualche parte di nome
@@ -125,17 +178,17 @@ echo "Analyzing sample $TUMOR_NAME"
 
     echo "Add or Replace Read Groups on Tumor"
 
-    $PATH_JAVA -jar $PATH_PICARD AddOrReplaceReadGroups I=$PATH_SAM_TUMOR/${TUMOR_NAME}.sam O=$PATH_BAM_TUMOR/${TUMOR_NAME}_annotato.bam RGID=0 RGLB=lib1 RGPL=illumina RGPU=SN166 RGSM=$TUMOR_NAME CREATE_INDEX=TRUE
+    $PATH_JAVA -jar $PATH_PICARD AddOrReplaceReadGroups I=$PATH_SAM_TUMOR/${TUMOR_NAME}.sam O=$PATH_BAM_TUMOR/${TUMOR_NAME}_annotate.bam RGID=0 RGLB=lib1 RGPL=illumina RGPU=SN166 RGSM=$TUMOR_NAME CREATE_INDEX=TRUE
 
     echo "BAM sorting"
-    $PATH_JAVA -jar $PATH_PICARD SortSam I=$PATH_BAM_TUMOR/${TUMOR_NAME}_annotato.bam O=$PATH_BAM_TUMOR/${TUMOR_NAME}_sorted.bam SORT_ORDER=coordinate
+    $PATH_JAVA -jar $PATH_PICARD SortSam I=$PATH_BAM_TUMOR/${TUMOR_NAME}_annotate.bam O=$PATH_BAM_TUMOR/${TUMOR_NAME}_sorted.bam SORT_ORDER=coordinate
 
     rm $PATH_SAM_TUMOR/${TUMOR_NAME}.sam
 
     echo "BAM ordering"
     $PATH_JAVA -jar $PATH_PICARD ReorderSam I=$PATH_BAM_TUMOR/${TUMOR_NAME}_sorted.bam O=$PATH_BAM_TUMOR/${TUMOR_NAME}_ordered.bam SEQUENCE_DICTIONARY=$index/hg38.dict CREATE_INDEX=TRUE
 
-    rm $PATH_BAM_TUMOR/${TUMOR_NAME}_annotato.bam
+    rm $PATH_BAM_TUMOR/${TUMOR_NAME}_annotate.bam
 
     echo "Duplicates elimination"
     $PATH_JAVA -jar $PATH_PICARD MarkDuplicates I=$PATH_BAM_TUMOR/${TUMOR_NAME}_ordered.bam REMOVE_DUPLICATES=TRUE O=$PATH_BAM_TUMOR/${TUMOR_NAME}_nodup.bam CREATE_INDEX=TRUE M=$PATH_BAM_TUMOR/${TUMOR_NAME}_file.txt
@@ -143,7 +196,6 @@ echo "Analyzing sample $TUMOR_NAME"
     rm $PATH_BAM_TUMOR/${TUMOR_NAME}_sorted.bam
     rm $PATH_BAM_TUMOR/${TUMOR_NAME}_ordered.bam
 
-NORMAL_NAME=$(basename $normal ".bam")
 
 echo "Normal conversion"
 
@@ -160,27 +212,25 @@ rm $input/${NORMAL_NAME}_al.bam
  rm $input/${NORMAL_NAME}_2.fastq
 
 echo "Add or Replace Read Groups on Normal"
-$PATH_JAVA -jar $PATH_PICARD  AddOrReplaceReadGroups I=$PATH_SAM_NORMAL/${NORMAL_NAME}.sam O=$PATH_BAM_NORMAL/${NORMAL_NAME}_annotato.bam RGID=0 RGLB=lib1 RGPL=illumina RGPU=SN166 RGSM=$NORMAL_NAME CREATE_INDEX=TRUE
+$PATH_JAVA -jar $PATH_PICARD  AddOrReplaceReadGroups I=$PATH_SAM_NORMAL/${NORMAL_NAME}.sam O=$PATH_BAM_NORMAL/${NORMAL_NAME}_annotate.bam RGID=0 RGLB=lib1 RGPL=illumina RGPU=SN166 RGSM=$NORMAL_NAME CREATE_INDEX=TRUE
 
 #La aggiungo, ma controllare se sono già stati tolti i duplicati nella pipeline di gdc
 
 echo "BAM sorting"
-$PATH_JAVA -jar $PATH_PICARD SortSam I=$PATH_BAM_NORMAL/${NORMAL_NAME}_annotato.bam O=$PATH_BAM_NORMAL/${NORMAL_NAME}_sorted.bam SORT_ORDER=coordinate
-
-rm $PATH_SAM_NORMAL/${NORMAL_NAME}.sam
+$PATH_JAVA -jar $PATH_PICARD SortSam I=$PATH_BAM_NORMAL/${NORMAL_NAME}_annotate.bam O=$PATH_BAM_NORMAL/${NORMAL_NAME}_sorted.bam SORT_ORDER=coordinate
 
 echo "BAM ordering"
 $PATH_JAVA -jar $PATH_PICARD ReorderSam I=$PATH_BAM_NORMAL/${NORMAL_NAME}_sorted.bam O=$PATH_BAM_NORMAL/${NORMAL_NAME}_ordered.bam SEQUENCE_DICTIONARY=$index/hg38.dict CREATE_INDEX=TRUE
 
-rm $PATH_BAM_NORMAL/${NORMAL_NAME}_annotato.bam
 
 echo "Duplicates elimination"
 $PATH_JAVA -jar $PATH_PICARD MarkDuplicates I=$PATH_BAM_NORMAL/${NORMAL_NAME}_ordered.bam REMOVE_DUPLICATES=TRUE O=$PATH_BAM_NORMAL/${NORMAL_NAME}_nodup.bam CREATE_INDEX=TRUE M=$PATH_BAM_NORMAL/${NORMAL_NAME}_file.txt
 
+rm $PATH_BAM_NORMAL/${NORMAL_NAME}_annotate.bam
 rm $PATH_BAM_NORMAL/${NORMAL_NAME}_sorted.bam
 rm $PATH_BAM_NORMAL/${NORMAL_NAME}_ordered.bam
 
-#QUI
+
 echo "Variant calling with GATK"
 
 VCF_NAME=$(basename $TUMOR_NAME "_tumor.bam")
@@ -229,8 +279,5 @@ echo "Variant calling with VarScan"
         sed '/^[[:blank:]]*$/d' $PATH_TXT/*.hg38_ALL.sites.2015_08_filtered | wc -l >  $PATH_TXT/${VCF_NAME}.txt #Capire cosa faceva Anna QUI
         #Aggiungere script R, però prima provarlo
 
-        rm $PATH_BAM_NORMAL/${NORMAL_NAME}_nodup.bam
-        rm $PATH_BAM_TUMOR/${TUMOR_NAME}_nodup.bam
-
-        cp $PATH_TXT/${VCF_NAME}.txt tmb/
-        cp $PATH_TXT/${VCF_NAME}.variant_function vcf/
+        rm -r $PATH_BAM_NORMAL
+        rm -r $PATH_BAM_TUMOR
