@@ -148,12 +148,24 @@ if [ "$type" == "fastq" ]; then
   echo "Alignment"
   #Potrei togliere il path delle folder che tanto nel crea dipendenze sono create nel proj path e fare inserire solo quello
   #cambiare il nome del GRCh38
-    bowtie2 -x $ifolder/GRCh38_noalt_as/GRCh38_noalt_as -p $RT -1 $input/${TUMOR_NAME}_val_1.fq -2 $input/${TUMOR_NAME}_val_2.fq -S $PATH_SAM_TUMOR || exit_abnormal_code "Unable to align input file" 102
+    bowtie2 -x $ifolder/hg38/hg38 -p $RT -1 $input/${TUMOR_NAME}_val_1.fq -2 $input/${TUMOR_NAME}_val_2.fq -S $PATH_SAM_TUMOR/${TUMOR_NAME}.sam || exit_abnormal_code "Unable to align input file" 102
   elif [[ "$paired" == "no" ]]; then
-    bowtie2 -p "$threads" -x "$ifolder/$index" -U "$PATH_TRIM/${FASTQ1_NAME}_trimmed.fq" -S "$PATH_SAM/aligned.sam" || exit_abnormal_code "Unable to align input file" 102
+    bowtie2 -p "$threads" -x "$ifolder/$index" -U "$PATH_TRIM/${TUMOR_NAME}_trimmed.fq" -S "$PATH_SAM/${TUMOR_NAME}.sam" || exit_abnormal_code "Unable to align input file" 102
+    echo "Add or Replace Read Groups on Tumor"
+    $PATH_JAVA -jar $PATH_PICARD AddOrReplaceReadGroups I=$PATH_SAM_TUMOR/${TUMOR_NAME}.sam O=$PATH_BAM_TUMOR/${TUMOR_NAME}_annotate.bam RGID=0 RGLB=lib1 RGPL=illumina RGPU=SN166 RGSM=$TUMOR_NAME CREATE_INDEX=TRUE || exit_abnormal_code "Add or Replace Read Groups on Tumor" 102
+    echo "Add or Replace Read Groups on Normal"
+    $PATH_JAVA -jar $PATH_PICARD AddOrReplaceReadGroups I=$PATH_SAM_TUMOR/${NORMAL_NAME}.sam O=$PATH_BAM_NORMAL/${NORMAL_NAME}_annotate.bam RGID=0 RGLB=lib1 RGPL=illumina RGPU=SN166 RGSM=$NORMAL_NAME CREATE_INDEX=TRUE || exit_abnormal_code "Add or Replace Read Groups on Normal" 102
   fi
+elif ["$type" == "bam"]
+  TUMOR_NAME=$(basename $tumor ".bam")
+  NORMAL_NAME=$(basename $normal ".bam")
+  echo "Add or Replace Read Groups on Tumor"
+  $PATH_JAVA -jar $PATH_PICARD AddOrReplaceReadGroups I=$input/${TUMOR_NAME}.bam O=$PATH_BAM_TUMOR/${TUMOR_NAME}_annotate.bam RGID=0 RGLB=lib1 RGPL=illumina RGPU=SN166 RGSM=$TUMOR_NAME CREATE_INDEX=TRUE || exit_abnormal_code "Add or Replace Read Groups on Tumor" 102
+  echo "Add or Replace Read Groups on Normal"
+  $PATH_JAVA -jar $PATH_PICARD AddOrReplaceReadGroups I=$input/${NORMAL_NAME}.bam O=$PATH_BAM_NORMAL/${NORMAL_NAME}_annotate.bam RGID=0 RGLB=lib1 RGPL=illumina RGPU=SN166 RGSM=$NORMAL_NAME CREATE_INDEX=TRUE || exit_abnormal_code "Add or Replace Read Groups on Normal" 102
 fi
 
+#Aggiustare la cosa del gzip
 echo "Pipeline starting"
 
     TUMOR_NAME=$(basename $tumor ".bam")  #Vedere se si deve eliminare qualche parte di nome
@@ -162,23 +174,7 @@ echo "Analyzing sample $TUMOR_NAME"
 
     echo "Tumor conversion"
 
-#Aggiungere le cancellazioni
-    samtools sort -n -o $input/${TUMOR_NAME}_al.bam $input/${TUMOR_NAME}.bam -@ 4
-    bedtools bamtofastq -i $input/${TUMOR_NAME}_al.bam -fq $input/${TUMOR_NAME}_1.fastq -fq2 $input/${TUMOR_NAME}_2.fastq
 
-    rm $input/${TUMOR_NAME}.bam
-    rm $input/${TUMOR_NAME}_al.bam
-
-    #Aggiungere l'opzione SE
-    echo "Tumor alignment"
-    bowtie2 -x $index/GRCh38_noalt_as/GRCh38_noalt_as -p 6 -1 $input/${TUMOR_NAME}_1.fastq -2 $input/${TUMOR_NAME}_2.fastq -S $PATH_SAM_TUMOR/${TUMOR_NAME}.sam
-
-    rm $input/${TUMOR_NAME}_1.fastq
-    rm $input/${TUMOR_NAME}_2.fastq
-
-    echo "Add or Replace Read Groups on Tumor"
-
-    $PATH_JAVA -jar $PATH_PICARD AddOrReplaceReadGroups I=$PATH_SAM_TUMOR/${TUMOR_NAME}.sam O=$PATH_BAM_TUMOR/${TUMOR_NAME}_annotate.bam RGID=0 RGLB=lib1 RGPL=illumina RGPU=SN166 RGSM=$TUMOR_NAME CREATE_INDEX=TRUE
 
     echo "BAM sorting"
     $PATH_JAVA -jar $PATH_PICARD SortSam I=$PATH_BAM_TUMOR/${TUMOR_NAME}_annotate.bam O=$PATH_BAM_TUMOR/${TUMOR_NAME}_sorted.bam SORT_ORDER=coordinate

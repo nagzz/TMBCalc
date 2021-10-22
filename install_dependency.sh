@@ -56,6 +56,7 @@ cd
 cd $PATH_INDEX
 wget https://genome-idx.s3.amazonaws.com/bt/GRCh38_noalt_as.zip
 unzip GRCh38_noalt_as.zip
+mv GRCh38_noalt_as hg38 #Cambia il nome interno
 wget https://genome-idx.s3.amazonaws.com/bt/hg19.zip
 unzip hg19.zip
 wget https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/hg38.fa.gz
