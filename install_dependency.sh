@@ -11,6 +11,68 @@
 #tar xzf annovar.latest.tar.gz
 #if per hg19/hg38/both
 
+usage() {
+  echo "Usage: $0 [-p/-path path of the project]
+  [-a/-annovar path of annovar]
+  [-i/-index choose between hg19 or hg38]
+  [-pr/-perm java]
+  [-jv/-java java]" 1>&2
+}
+
+exit_abnormal_code() {
+  echo "$1" 1>&2
+  exit $2
+}
+
+exit_abnormal_usage() {
+  echo "$1" 1>&2
+  usage
+  exit 1
+}
+
+exit_abnormal() {
+  usage
+  exit 1
+}
+
+while [ -n "$1" ]; do
+  case "$1" in
+  -path | -p)
+    path="$2"
+    echo "The value provided for path is $path"
+    shift
+    ;;
+  -annovar | -a)
+    annovar="$2"
+    echo "The value provided for annovar path is $annovar"
+    shift
+    ;;
+  -index | -i)
+    index="$2"
+    echo "The value provided for index is $index"
+    shift
+    ;;
+  -java | -jv)
+    java="$2"
+    echo "The value provided for java is $java"
+    shift
+    ;;
+  -perm | -pr)
+    perm="$2"
+    echo "The value provided for permission is $perm"
+    if ! { [ "$perm" = "yes" ] || [ "$perm" = "no" ]; }; then
+      exit_abnormal_usage "Error: permission must be equal to yes or no."
+    fi
+    shift
+    ;;
+  *)
+    exit_abnormal_usage "Error: invalid parameter \"$1\"."
+    shift
+    ;;
+  esac
+  shift
+done
+
 #!/bin/bash
 
 PROJ_PATH=$path
@@ -23,8 +85,7 @@ mkdir $PATH_INDEX
 mkdir $PATH_PROGRAM
 
 
-if [ $perm == "yes" ];
-then #Controlla se ho scritto l'if giusto
+if [ $perm == "yes" ]; then
   sudo apt install -y samtools
   sudo apt install -y bowtie2
   sudo apt install -y cutadapt
@@ -70,10 +131,10 @@ $PATH_JAVA -jar $PATH_PROGRAM/picard.jar CreateSequenceDictionary R=hg38.fa O=hg
 wget http://hgdownload.soe.ucsc.edu/goldenPath/hg19/liftOver/hg19ToHg38.over.chain.gz
 cd
 
-
 cd $PATH_ANNOVAR
 perl annotate_variation.pl -downdb -webfrom annovar 1000g2015aug humandb -buildver $index
 perl annotate_variation.pl -downdb -webfrom annovar refgene humandb -buildver $index
 perl annotate_variation.pl -downdb -webfrom annovar esp6500siv2_all humandb -buildver $index
 
 #Inserire scaricamento dbsnp e cosmic
+#Inserire nel git i due database da scaricare
