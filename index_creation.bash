@@ -56,7 +56,7 @@ if [ $index == "hg19" ]; then
   gunzip hg19.fa.gz
   samtools faidx hg19.fa
   java -jar /program/picard.jar CreateSequenceDictionary R=hg19.fa O=hg19.dict
-  wget https://ftp.ncbi.nlm.nih.gov/snp/latest_release/VCF/GCF_000001405.25.gz
+  wget https://ftp.ncbi.nlm.nih.gov/snp/latest_release/VCF/GCF_000001405.25.gz #o scaricare su annovar o lasciarlo dov'è
   wget https://ftp.ncbi.nlm.nih.gov/snp/latest_release/VCF/GCF_000001405.25.gz.tbi
   gunzip GCF_000001405.25.gz
   mv GCF_000001405.25 GCF_000001405.hg19
