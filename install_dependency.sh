@@ -1,3 +1,4 @@
+#!/bin/bash
 #Before launching the install dependency install Annovar!
 #Va bene perchi ha i sudo sennò cercare i corrispettivi di anaconda e creare una divisione tra sudo e anaconda come paramentro
 #Parametro per CrossMap
@@ -10,6 +11,8 @@
 #Se java 8 installato con sudo mettere in path java solo java
 #tar xzf annovar.latest.tar.gz
 #if per hg19/hg38/both
+#wget http://hgdownload.soe.ucsc.edu/goldenPath/hg19/liftOver/hg19ToHg38.over.chain.gz
+#Pensare a che fare con lo zip
 
 usage() {
   echo "Usage: $0 [-p/-path path of the project]
@@ -96,7 +99,7 @@ if [ $perm == "yes" ]; then
 else
   conda install -c bioconda samtools
   conda install -c bioconda bowtie2
-  conda install -c bioconda trim-galore
+  #conda install -c bioconda trim-galore
   conda install -c bioconda fastqc
   conda install -c conda-forge unzip
   conda install -c bioconda crossmap
@@ -114,27 +117,41 @@ wget https://github.com/dkoboldt/varscan/archive/refs/heads/master.zip
 unzip master.zip
 mv varscan-master/VarScan.v2.4.3.jar ./
 cd
-cd $PATH_INDEX
-wget https://genome-idx.s3.amazonaws.com/bt/GRCh38_noalt_as.zip
-unzip GRCh38_noalt_as.zip
-mv GRCh38_noalt_as hg38 #Cambia il nome interno
-wget https://genome-idx.s3.amazonaws.com/bt/hg19.zip
-unzip hg19.zip
-wget https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/hg38.fa.gz
-gunzip hg38.fa.gz
-samtools faidx hg38.fa
-wget http://hgdownload.cse.ucsc.edu/goldenpath/hg19/bigZips/hg19.fa.gz
-gunzip hg19.fa.gz
-samtools faidx hg19.fa
-$PATH_JAVA -jar $PATH_PROGRAM/picard.jar CreateSequenceDictionary R=hg19.fa O=hg19.dict
-$PATH_JAVA -jar $PATH_PROGRAM/picard.jar CreateSequenceDictionary R=hg38.fa O=hg38.dict
-wget http://hgdownload.soe.ucsc.edu/goldenPath/hg19/liftOver/hg19ToHg38.over.chain.gz
+if [ $index == "hg19" ]; then
+  cd $PATH_INDEX
+  wget https://genome-idx.s3.amazonaws.com/bt/hg19.zip
+  unzip hg19.zip
+  wget http://hgdownload.cse.ucsc.edu/goldenpath/hg19/bigZips/hg19.fa.gz
+  gunzip hg19.fa.gz
+  samtools faidx hg19.fa
+  $PATH_JAVA -jar $PATH_PROGRAM/picard.jar CreateSequenceDictionary R=hg19.fa O=hg19.dict
+  wget https://ftp.ncbi.nlm.nih.gov/snp/latest_release/VCF/GCF_000001405.25.gz
+  wget https://ftp.ncbi.nlm.nih.gov/snp/latest_release/VCF/GCF_000001405.25.gz.tbi
+  gunzip GCF_000001405.25.gz
+  mv GCF_000001405.25 GCF_000001405.hg19
+  mv GCF_000001405.25 $PATH_ANNOVAR/humandb
+else
+  cd $PATH_INDEX
+  wget https://genome-idx.s3.amazonaws.com/bt/GRCh38_noalt_as.zip
+  unzip GRCh38_noalt_as.zip
+  mv GRCh38_noalt_as hg38
+  cd hg38
+  rename 's/^GRCh38_noalt_as\./hg38./' GRCh38_noalt_as.*
+  cd ..
+  wget https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/hg38.fa.gz
+  gunzip hg38.fa.gz
+  samtools faidx hg38.fa
+  $PATH_JAVA -jar $PATH_PROGRAM/picard.jar CreateSequenceDictionary R=hg38.fa O=hg38.dict
+  wget https://ftp.ncbi.nlm.nih.gov/snp/latest_release/VCF/GCF_000001405.39.gz
+  wget https://ftp.ncbi.nlm.nih.gov/snp/latest_release/VCF/GCF_000001405.39.gz.tbi
+  gunzip GCF_000001405.39.gz
+  mv GCF_000001405.39 GCF_000001405.hg38
+  mv GCF_000001405.39 $PATH_ANNOVAR/humandb
 cd
+fi
 
 cd $PATH_ANNOVAR
 perl annotate_variation.pl -downdb -webfrom annovar 1000g2015aug humandb -buildver $index
 perl annotate_variation.pl -downdb -webfrom annovar refgene humandb -buildver $index
 perl annotate_variation.pl -downdb -webfrom annovar esp6500siv2_all humandb -buildver $index
-
-#Inserire scaricamento dbsnp e cosmic
-#Inserire nel git i due database da scaricare
+perl annotate_variation.pl -downdb -webfrom annovar cosmic70 humandb -buildver $index
