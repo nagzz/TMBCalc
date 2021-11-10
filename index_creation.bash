@@ -55,12 +55,12 @@ if [ $index == "hg19" ]; then
   wget http://hgdownload.cse.ucsc.edu/goldenpath/hg19/bigZips/hg19.fa.gz
   gunzip hg19.fa.gz
   samtools faidx hg19.fa
-  java -jar program/picard.jar CreateSequenceDictionary R=hg19.fa O=hg19.dict
+  java -jar /program/picard.jar CreateSequenceDictionary R=hg19.fa O=hg19.dict
   wget https://ftp.ncbi.nlm.nih.gov/snp/latest_release/VCF/GCF_000001405.25.gz
   wget https://ftp.ncbi.nlm.nih.gov/snp/latest_release/VCF/GCF_000001405.25.gz.tbi
   gunzip GCF_000001405.25.gz
   mv GCF_000001405.25 GCF_000001405.hg19
-  mv GCF_000001405.25 $PATH_ANNOVAR/humandb
+  mv GCF_000001405.hg19 $PATH_ANNOVAR/humandb
   cd
 else
   cd index
@@ -73,12 +73,13 @@ else
   wget https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/hg38.fa.gz
   gunzip hg38.fa.gz
   samtools faidx hg38.fa
-  java -jar program/picard.jar CreateSequenceDictionary R=hg38.fa O=hg38.dict
+  java -jar /program/picard.jar CreateSequenceDictionary R=hg38.fa O=hg38.dict
   wget https://ftp.ncbi.nlm.nih.gov/snp/latest_release/VCF/GCF_000001405.39.gz
   wget https://ftp.ncbi.nlm.nih.gov/snp/latest_release/VCF/GCF_000001405.39.gz.tbi
   gunzip GCF_000001405.39.gz
   mv GCF_000001405.39 GCF_000001405.hg38
-  mv GCF_000001405.39 $PATH_ANNOVAR/humandb
+  mv GCF_000001405.hg38 $PATH_ANNOVAR/humandb
+  rm GRCh38_noalt_as.zip
 fi
 
 cd $PATH_ANNOVAR

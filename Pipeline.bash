@@ -151,7 +151,7 @@ if [ "$type" == "fastq" ]; then
     $PATH_PROGRAM/TrimGalore-0.6.6/trim_galore -j "$RT" --paired --dont_gzip "$input/${NORMAL_NAME}_1.fastq" "$input/${NORMAL_NAME}_2.fastq" || exit_abnormal_code "Unable to trim input file" 101
     echo "Tumor Alignment"
   #Potrei togliere il path delle folder che tanto nel crea dipendenze sono create nel proj path e fare inserire solo quello
-    bowtie2 -x $ifolder/hg38/hg38 -p $RT -1 $input/${TUMOR_NAME}_val_1.fq -2 $input/${TUMOR_NAME}_val_2.fq -S $PATH_SAM_TUMOR/${TUMOR_NAME}.sam || exit_abnormal_code "Unable to align input file" 102
+    bowtie2 -x $ifolder/${index}/$index -p $RT -1 $input/${TUMOR_NAME}_val_1.fq -2 $input/${TUMOR_NAME}_val_2.fq -S $PATH_SAM_TUMOR/${TUMOR_NAME}.sam || exit_abnormal_code "Unable to align input file" 102
     echo "Normal alignment"
     bowtie2 -x $ifolder/$index -p $RT -1 $input/${NORMAL_NAME}_val_1.fq -2 $input/${NORMAL_NAME}_val_2.fq -S $PATH_SAM_NORMAL/${NORMAL_NAME}.sam || exit_abnormal_code "Unable to align input file" 102
   elif [[ "$paired" == "no" ]]; then
