@@ -51,14 +51,18 @@ RUN apt-get install rename
 RUN apt-get update --fix-missing
 RUN mkdir program
 RUN unzip master.zip
-RUN mv varscan-master/VarScan.v2.4.3.jar Program/
-RUN unzip gatk-4.1.0.0.zip
-RUN mv gatk-4.1.0.0/gatk-package-4.1.0.0-local.jar Program/
+RUN mv varscan-master/VarScan.v2.4.3.jar program/
+RUN mv gatk-4.1.0.0/gatk-package-4.1.0.0-local.jar program/
+RUN mv picard.jar program/
+RUN mv TrimGalore-0.6.6 program/
 RUN mkdir index
 RUN apt-get -y install nano
 RUN apt-get -y install apt-utils --fix-missing
-COPY pipeline.bash /
+RUN rm gatk-4.1.0.0.zip
+COPY Pipeline.bash /
 COPY index_creation.bash /
+
+#Inserire rimozione
 
 
 ENTRYPOINT [ "bash" ]
