@@ -29,7 +29,7 @@ At this point you should create the index using the script "index_creation.bash"
 - -i with the index choose. You can choose among hg19 and hg38.
 
 ```
-bash index_creation.bash -a annovar -i hg38
+bash index_creation.bash -a /annovar/ -i hg38
 ```
 
 ## Withouth Docker
@@ -71,7 +71,7 @@ The pipeline needs several parameters:
 - -t the tumor sample name withouth the extension and the number in case of paired end
 - -n the normal sample name withouth the extension and the number in case of paired end
 - -tp sample type, you can choose between fastq or bam
-- -tp
+- -pr yes if you have paired-end samples, no if samples are single-end
 - -i the input files folder
 - -id 
 - -if
