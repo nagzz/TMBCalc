@@ -1,8 +1,8 @@
 # TMBCalc
 
-## Installation
+# Installation
 
-# Depencencies
+## Depencencies
 
 Both if are going to use docker or not you should register on annovar and download the software through the following website:
 
@@ -10,7 +10,7 @@ Both if are going to use docker or not you should register on annovar and downlo
 https://annovar.openbioinformatics.org/en/latest/user-guide/download/
 ```
 
-# Docker
+## With Docker
 Install docker through 
 https://docs.docker.com/get-docker/
 Pull the pipeline image using the command
@@ -32,7 +32,7 @@ At this point you should create the index using the script "index_creation.bash"
 bash index_creation.bash -a annovar -i hg38
 ```
 
-# Withouth Docker
+## Withouth Docker
 
 If you do not want to use docker you can install the dependencis of the pipeline yourself.
 You need to install java 8 to make some of the software working. 
@@ -64,6 +64,22 @@ bash install_dependency.sh -p /home/ubuntu/project_path -a /home/ubuntu/Annovar 
 
 This step can take a while since index should be downloaded. 
 In the Project path will be created two folder: index and program.
+
+### Pipeline using 
+
+The pipeline needs several parameters:
+- -t the tumor sample name withouth the extension and the number in case of paired end
+- -n the normal sample name withouth the extension and the number in case of paired end
+- -tp sample type, you can choose between fastq or bam
+- -tp
+- -i the input files folder
+- -id 
+- -if
+- -p
+- -j
+- -th
+
+bash Pipeline.bash -t -n -tp -i -id -if -p -j -th
 
 
 
