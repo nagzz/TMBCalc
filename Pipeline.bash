@@ -182,8 +182,8 @@ fi
 
 echo "Tumor analysis"
 echo "BAM sorting"
-$PATH_JAVA -jar $PATH_PICARD SortSam I=$PATH_BAM_TUMOR/${TUMOR_NAME}_annotate.bam O=$PATH_BAM_TUMOR/${TUMOR_NAME}_sorted.bam SORT_ORDER=coordinate
-rm $PATH_SAM_TUMOR/${TUMOR_NAME}.sam || exit_abnormal_code "Unable to sort Tumor sample" 104
+$PATH_JAVA -jar $PATH_PICARD SortSam I=$PATH_BAM_TUMOR/${TUMOR_NAME}_annotate.bam O=$PATH_BAM_TUMOR/${TUMOR_NAME}_sorted.bam SORT_ORDER=coordinate || exit_abnormal_code "Unable to sort Tumor sample" 104
+rm -r $PATH_SAM_TUMOR
 echo "BAM ordering"
 $PATH_JAVA -jar $PATH_PICARD ReorderSam I=$PATH_BAM_TUMOR/${TUMOR_NAME}_sorted.bam O=$PATH_BAM_TUMOR/${TUMOR_NAME}_ordered.bam SEQUENCE_DICTIONARY=$ifolder/${index}.dict CREATE_INDEX=TRUE || exit_abnormal_code "Unable to reorder Tumor sample" 105
 echo "Duplicates elimination"
@@ -195,8 +195,8 @@ rm $PATH_BAM_TUMOR/${TUMOR_NAME}_ordered.bam
 
 echo "Normal analysis"
 echo "BAM sorting"
-$PATH_JAVA -jar $PATH_PICARD SortSam I=$PATH_BAM_NORMAL/${NORMAL_NAME}_annotate.bam O=$PATH_BAM_NORMAL/${NORMAL_NAME}_sorted.bam SORT_ORDER=coordinate
-rm $PATH_SAM_NORMAL/${NORMAL_NAME}.sam || exit_abnormal_code "Unable to sort Normal sample" 104
+$PATH_JAVA -jar $PATH_PICARD SortSam I=$PATH_BAM_NORMAL/${NORMAL_NAME}_annotate.bam O=$PATH_BAM_NORMAL/${NORMAL_NAME}_sorted.bam SORT_ORDER=coordinate || exit_abnormal_code "Unable to sort Normal sample" 104
+rm -r $PATH_SAM_NORMAL/${NORMAL_NAME}.sam 
 echo "BAM ordering"
 $PATH_JAVA -jar $PATH_PICARD ReorderSam I=$PATH_BAM_NORMAL/${NORMAL_NAME}_sorted.bam O=$PATH_BAM_NORMAL/${NORMAL_NAME}_ordered.bam SEQUENCE_DICTIONARY=$ifolder/${index}.dict CREATE_INDEX=TRUE || exit_abnormal_code "Unable to reorder Normal sample" 105
 echo "Duplicates elimination"
