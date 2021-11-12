@@ -65,7 +65,7 @@ bash install_dependency.sh -p /home/ubuntu/project_path -a /home/ubuntu/Annovar 
 This step can take a while since index should be downloaded. 
 In the Project path will be created two folder: index and program.
 
-### Pipeline using 
+### Pipeline usage
 
 The pipeline needs several parameters:
 - -t the tumor sample name withouth the extension and the number in case of paired end
@@ -73,13 +73,13 @@ The pipeline needs several parameters:
 - -tp sample type, you can choose between fastq or bam
 - -pr yes if you have paired-end samples, no if samples are single-end
 - -i the input files folder
-- -id 
-- -if
-- -p
-- -j
-- -th
+- -id the human index choosen. It can be hg19 or hg38.
+- -if the path of the folder where the index have been downloaded
+- -p the path of the folder where the program have been downloaded
+- -j open jdk or java path
+- -th threads number, put 1 if you are not sure.
 
-bash Pipeline.bash -t -n -tp -i -id -if -p -j -th
+bash Pipeline.bash -t tumor_sample_name -n normal_sample_name -tp bam -i /home/ubuntu/input -pr no -id hg38 -if /index/ -p /program/ -j /usr/lib/jvm/java-8-openjdk-amd64/bin/java -th 1
 
 
 
