@@ -7,11 +7,10 @@ usage() {
   echo "Usage: $0 [-t/-tumor tumor sample]
   [-n/-normal normal sample ]
   [-tp/-type sample type, can be fastq or bam]
-  [-g/-gz are the sample gunzipped? Put yes or no]
   [-i/-input input folder ]
   [-pr/-paired specify if the samples are paired end or not]
   [-id/-index human index]
-  [-if/-ifolder index folder]
+  [-ifl/-ifolder index folder]
   [-p/-program program folder]
   [-j/-jv java]
   [-th/-threads number of bowtie2 threads, leave 1 if you are uncertain]" 1>&2
@@ -55,7 +54,7 @@ while [ -n "$1" ]; do
     echo "The value provided for index is $index"
     shift
     ;;
-  -ifolder | -if)
+  -ifolder | -ifl)
     ifolder="$2"
     echo "The value provided for index folder is $ifolder"
     shift
@@ -106,9 +105,11 @@ while [ -n "$1" ]; do
 done
 
 
-if [[ -z "$input" ]] || [[ -z "$tumor" ]] || [[ -z "$normal" ]] || [[ -z "$index" ]] || [[ -z "$ifolder" ]] || [[ -z "$program" ]] || [[ -z "$paired" ]] || [[ -z "$type" ]] || [[ -z "$java" ]] || [[ -z "$threads" ]]; then
+if [[ -z "$input" ]] || [[ -z "$tumor" ]] || [[ -z "$normal" ]] || [[ -z "$index" ]] || [[ -z "$ifolder" ]] || [[ -z "$program" ]] || [[ -z "$paired" ]] || [[ -z "$type" ]] || [[ -z "$jv" ]] || [[ -z "$threads" ]]; then
   exit_abnormal_usage "All parameters must be passed"
 fi
+
+#Paired lo dovrei segnare da passare solo se è passato fastq
 
 
 PATH_OUTPUT=$input/output
@@ -134,41 +135,42 @@ PATH_ANNOVAR=$PATH_PROGRAM/annovar
 [[ ! -d $PATH_VCF ]] && mkdir "$PATH_VCF"
 [[ ! -d $PATH_TXT ]] && mkdir "$PATH_TXT"
 
+if (($threads > 7)); then
+  RT=6
+else
+  RT=$threads
+fi
 
-if [ "$type" == "fastq" ]; then
+if [[ "$type" == "fastq" ]]; then
   TUMOR_NAME=$(basename $tumor ".fastq")
   NORMAL_NAME=$(basename $normal ".fastq")
   if [[ "$paired" == "yes" ]]; then
     echo "Trimming"
-    if ((threads > 7)); then
-      RT=6
-    else
-      RT=$threads
-    fi
     echo "Tumor trimming"
-    $PATH_PROGRAM/TrimGalore-0.6.6/trim_galore -j "$RT" --paired --dont_gzip "$input/${TUMOR_NAME}_1.fastq" "$input/${TUMOR_NAME}_2.fastq" || exit_abnormal_code "Unable to trim input file" 101
+    $PATH_PROGRAM/TrimGalore-0.6.6/trim_galore -j "$RT" -o $input --dont_gzip --paired "$input/${TUMOR_NAME}_1.fastq" "$input/${TUMOR_NAME}_2.fastq" || exit_abnormal_code "Unable to trim input file" 101
     echo "Normal trimming"
-    $PATH_PROGRAM/TrimGalore-0.6.6/trim_galore -j "$RT" --paired --dont_gzip "$input/${NORMAL_NAME}_1.fastq" "$input/${NORMAL_NAME}_2.fastq" || exit_abnormal_code "Unable to trim input file" 101
+    $PATH_PROGRAM/TrimGalore-0.6.6/trim_galore -j "$RT" -o $input --dont_gzip --paired "$input/${NORMAL_NAME}_1.fastq" "$input/${NORMAL_NAME}_2.fastq" || exit_abnormal_code "Unable to trim input file" 101
     echo "Tumor Alignment"
   #Potrei togliere il path delle folder che tanto nel crea dipendenze sono create nel proj path e fare inserire solo quello
     bowtie2 -x $ifolder/${index}/$index -p $RT -1 $input/${TUMOR_NAME}_val_1.fq -2 $input/${TUMOR_NAME}_val_2.fq -S $PATH_SAM_TUMOR/${TUMOR_NAME}.sam || exit_abnormal_code "Unable to align input file" 102
     echo "Normal alignment"
-    bowtie2 -x $ifolder/$index -p $RT -1 $input/${NORMAL_NAME}_val_1.fq -2 $input/${NORMAL_NAME}_val_2.fq -S $PATH_SAM_NORMAL/${NORMAL_NAME}.sam || exit_abnormal_code "Unable to align input file" 102
+    bowtie2 -x $ifolder/${index}/$index -p $RT -1 $input/${NORMAL_NAME}_val_1.fq -2 $input/${NORMAL_NAME}_val_2.fq -S $PATH_SAM_NORMAL/${NORMAL_NAME}.sam || exit_abnormal_code "Unable to align input file" 102
   elif [[ "$paired" == "no" ]]; then
     echo "Tumor trimming"
-    $PATH_PROGRAM/TrimGalore-0.6.6/trim_galore -j "$RT" --dont_gzip -o "$input/${TUMOR_NAME}.fastq" || exit_abnormal_code "Unable to trim input file" 101
+    $PATH_PROGRAM/TrimGalore-0.6.6/trim_galore -j "$RT" -o $input --dont_gzip "$input/${TUMOR_NAME}.fastq" || exit_abnormal_code "Unable to trim input file" 101
     echo "Normal trimming"
-    $PATH_PROGRAM/TrimGalore-0.6.6/trim_galore -j "$RT" --dont_gzip -o "$input/${NORMAL_NAME}.fastq" || exit_abnormal_code "Unable to trim input file" 101
+    $PATH_PROGRAM/TrimGalore-0.6.6/trim_galore -j "$RT" -o $input --dont_gzip "$input/${NORMAL_NAME}.fastq" || exit_abnormal_code "Unable to trim input file" 101
     echo "Tumor Alignment"
-    bowtie2 -p "$threads" -x "$ifolder/$index" -U "$PATH_TRIM/${TUMOR_NAME}_trimmed.fq" -S "$PATH_SAM/${TUMOR_NAME}.sam" || exit_abnormal_code "Unable to align input file" 102
+    bowtie2 -p "$threads" -x "$ifolder/${index}/$index" -U "$PATH_TRIM/${TUMOR_NAME}_trimmed.fq" -S "$PATH_SAM/${TUMOR_NAME}.sam" || exit_abnormal_code "Unable to align input file" 102
     echo "Normal Alignment"
-    bowtie2 -p "$threads" -x "$ifolder/$index" -U "$PATH_TRIM/${NORMAL_NAME}_trimmed.fq" -S "$PATH_SAM/${NORMAL_NAME}.sam" || exit_abnormal_code "Unable to align input file" 102
+    bowtie2 -p "$threads" -x "$ifolder/${index}/$index" -U "$PATH_TRIM/${NORMAL_NAME}_trimmed.fq" -S "$PATH_SAM/${NORMAL_NAME}.sam" || exit_abnormal_code "Unable to align input file" 102
+  fi
     echo "Add or Replace Read Groups on Tumor"
     $PATH_JAVA -jar $PATH_PICARD AddOrReplaceReadGroups I=$PATH_SAM_TUMOR/${TUMOR_NAME}.sam O=$PATH_BAM_TUMOR/${TUMOR_NAME}_annotate.bam RGID=0 RGLB=lib1 RGPL=illumina RGPU=SN166 RGSM=$TUMOR_NAME CREATE_INDEX=TRUE || exit_abnormal_code "Unable to Add or Replace Read Groups on Tumor" 103
     echo "Add or Replace Read Groups on Normal"
     $PATH_JAVA -jar $PATH_PICARD AddOrReplaceReadGroups I=$PATH_SAM_TUMOR/${NORMAL_NAME}.sam O=$PATH_BAM_NORMAL/${NORMAL_NAME}_annotate.bam RGID=0 RGLB=lib1 RGPL=illumina RGPU=SN166 RGSM=$NORMAL_NAME CREATE_INDEX=TRUE || exit_abnormal_code "Unable to Add or Replace Read Groups on Normal" 103
-  fi
-elif ["$type" == "bam"]
+elif [[ "$type" == "bam" ]]; then
+  "bam analysis"
   TUMOR_NAME=$(basename $tumor ".bam")
   NORMAL_NAME=$(basename $normal ".bam")
   echo "Add or Replace Read Groups on Tumor"

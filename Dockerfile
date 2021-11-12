@@ -5,7 +5,8 @@ RUN apt-get -y install unzip
 RUN apt-get -y install bowtie2
 RUN apt-get update --fix-missing
 RUN apt-get -y install python3-pip
-RUN pip3 install --user --upgrade cutadapt
+# RUN pip3 install --user --upgrade cutadapt
+RUN apt-get -y install cutadapt
 RUN apt-get -y install curl
 RUN apt-get -y install tar
 RUN apt-get -y install samtools
