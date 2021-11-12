@@ -1,5 +1,13 @@
 # TMBCalc
 
+The TMBCalc pipeline has been implemented in Bash and R. It allows the calculation of the TMB, yielding as output: (i) all the mutations implicated in the TMB calculation; (ii) the TMB value itself. 
+The pipeline consists of four modules plus TMB calculation:
+- Alignment
+- Bam Processing
+- Variant Calling
+- Annotation 
+- TMB Calculation
+
 # Installation
 
 ## Depencencies
