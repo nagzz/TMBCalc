@@ -115,7 +115,7 @@ fi
 PATH_OUTPUT=$input/output
 PATH_SAM_TUMOR=$PATH_OUTPUT/sam_tumor
 PATH_SAM_NORMAL=$PATH_OUTPUT/sam_normal
-PATH_BAM_TUMOR=$PATH_OUTPUT/bam_normal
+PATH_BAM_TUMOR=$PATH_OUTPUT/bam_tumor
 PATH_BAM_NORMAL=$PATH_OUTPUT/bam_normal
 PATH_VCF=$PATH_OUTPUT/vcf
 PATH_TXT=$PATH_OUTPUT/txt
@@ -196,7 +196,7 @@ rm $PATH_BAM_TUMOR/${TUMOR_NAME}_ordered.bam
 echo "Normal analysis"
 echo "BAM sorting"
 $PATH_JAVA -jar $PATH_PICARD SortSam I=$PATH_BAM_NORMAL/${NORMAL_NAME}_annotate.bam O=$PATH_BAM_NORMAL/${NORMAL_NAME}_sorted.bam SORT_ORDER=coordinate || exit_abnormal_code "Unable to sort Normal sample" 104
-rm -r $PATH_SAM_NORMAL/${NORMAL_NAME}.sam 
+rm -r $PATH_SAM_NORMAL/${NORMAL_NAME}.sam
 echo "BAM ordering"
 $PATH_JAVA -jar $PATH_PICARD ReorderSam I=$PATH_BAM_NORMAL/${NORMAL_NAME}_sorted.bam O=$PATH_BAM_NORMAL/${NORMAL_NAME}_ordered.bam SEQUENCE_DICTIONARY=$ifolder/${index}.dict CREATE_INDEX=TRUE || exit_abnormal_code "Unable to reorder Normal sample" 105
 echo "Duplicates elimination"
