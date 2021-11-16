@@ -161,7 +161,8 @@ if [[ "$type" == "fastq" ]]; then
     echo "Normal trimming"
     $PATH_PROGRAM/TrimGalore-0.6.6/trim_galore -j "$RT" -o $input --dont_gzip "$input/${NORMAL_NAME}.fastq" || exit_abnormal_code "Unable to trim input file" 101
     echo "Tumor Alignment"
-    bowtie2 -p "$threads" -x "$ifolder/${index}/$index" -U "$PATH_TRIM/${TUMOR_NAME}_trimmed.fq" -S "$PATH_SAM/${TUMOR_NAME}.sam" || exit_abnormal_code "Unable to align input file" 102
+    bowtie2 -p "$threads" -x "$ifolder/${index}/$index" -U "$PATH_TRIM/${TUMOR_NAME}_trimmed.fq" -S "$PATH_SAM/${TUMOR_NAME}.sam" || exit_abnormal_code "Unable to align input file" 102  #Threads deve diventare RT
+    #Creare una trimmed path dove inserire i trimmati o cambiare in input la path di -U
     echo "Normal Alignment"
     bowtie2 -p "$threads" -x "$ifolder/${index}/$index" -U "$PATH_TRIM/${NORMAL_NAME}_trimmed.fq" -S "$PATH_SAM/${NORMAL_NAME}.sam" || exit_abnormal_code "Unable to align input file" 102
   fi
