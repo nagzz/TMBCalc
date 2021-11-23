@@ -72,8 +72,9 @@ else
   cd hg38
   rename 's/^GRCh38_noalt_as\./hg38./' GRCh38_noalt_as.*
   cd ..
-  wget https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/hg38.fa.gz
-  gunzip hg38.fa.gz
+  wget https://www.encodeproject.org/files/GRCh38_no_alt_analysis_set_GCA_000001405.15/@@download/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta.gz
+  gunzip GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta.gz
+  mv GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta.gz hg38.fa
   samtools faidx hg38.fa
   java -jar /program/picard.jar CreateSequenceDictionary R=hg38.fa O=hg38.dict
   rm GRCh38_noalt_as.zip
