@@ -142,8 +142,8 @@ else
 fi
 
 if [[ "$type" == "fastq" ]]; then
-  TUMOR_NAME=$(basename $tumor ".fastq")
-  NORMAL_NAME=$(basename $normal ".fastq")
+  TUMOR_NAME=$tumor
+  NORMAL_NAME=$normal
   if [[ "$paired" == "yes" ]]; then
     echo "Trimming"
     echo "Tumor trimming"
@@ -172,8 +172,8 @@ if [[ "$type" == "fastq" ]]; then
     $PATH_JAVA -jar $PATH_PICARD AddOrReplaceReadGroups I=$PATH_SAM_NORMAL/${NORMAL_NAME}.sam O=$PATH_BAM_NORMAL/${NORMAL_NAME}_annotate.bam RGID=0 RGLB=lib1 RGPL=illumina RGPU=SN166 RGSM=$NORMAL_NAME CREATE_INDEX=TRUE || exit_abnormal_code "Unable to Add or Replace Read Groups on Normal" 103
 elif [[ "$type" == "bam" ]]; then
   "bam analysis"
-  TUMOR_NAME=$(basename $tumor ".bam")
-  NORMAL_NAME=$(basename $normal ".bam")
+  TUMOR_NAME=$tumor
+  NORMAL_NAME=$normal
   echo "Add or Replace Read Groups on Tumor"
   $PATH_JAVA -jar $PATH_PICARD AddOrReplaceReadGroups I=$input/${TUMOR_NAME}.bam O=$PATH_BAM_TUMOR/${TUMOR_NAME}_annotate.bam RGID=0 RGLB=lib1 RGPL=illumina RGPU=SN166 RGSM=$TUMOR_NAME CREATE_INDEX=TRUE || exit_abnormal_code "Unable to Add or Replace Read Groups on Tumor" 103
   echo "Add or Replace Read Groups on Normal"
@@ -222,8 +222,8 @@ echo "Variant calling with VarScan"
 samtools mpileup -B -f $ifolder/${index}.fa -Q 25 -L 250 -d 250 $PATH_BAM_NORMAL/${NORMAL_NAME}_nodup.bam $PATH_BAM_TUMOR/${TUMOR_NAME}_nodup.bam | $PATH_JAVA -jar $PATH_VARSCAN somatic -mpileup $PATH_VCF/${TUMOR_NAME}_somatic.vcf --min-var-freq 0.10 --strand-filter 1 --output-vcf 1 || exit_abnormal_code "Unable to call variants with Varscan" 109
 $PATH_JAVA -jar $PATH_VARSCAN processSomatic $PATH_VCF/${TUMOR_NAME}_somatic.vcf.indel || exit_abnormal_code "Unable to process somatic indel variants" 110
 $PATH_JAVA -jar $PATH_VARSCAN processSomatic $PATH_VCF/${TUMOR_NAME}_somatic.vcf.snp || exit_abnormal_code "Unable to process somatic snp variants" 111
-$PATH_JAVA -jar $PATH_VARSCAN somaticFilter $PATH_VCF/${TUMOR_NAME}_somatic.vcf..snp.Somatic.hc -min-var-freq 0.10 -indel-file $PATH_VCF/${TUMOR_NAME}.indel.vcf -output-file $PATH_VCF/${TUMOR_NAME}_somatic.snp.Somatic.hc.filter.vcf || exit_abnormal_code "Unable to filter somatic varscan variants" 112
-$PATH_JAVA -jar $PATH_VARSCAN compare $PATH_VCF/${TUMOR_NAME}_somatic.indel.Somatic.hc.vcf $PATH_VCF/${TUMOR_NAME}_somatic.snp.Somatic.hc.filter.vcf merge $PATH_VCF/${TUMOR_NAME}_somatic_merge.vcf || exit_abnormal_code "Unable to merge varscan variants" 113
+$PATH_JAVA -jar $PATH_VARSCAN somaticFilter $PATH_VCF/${TUMOR_NAME}_somatic.vcf.snp.Somatic.hc -min-var-freq 0.10 -indel-file $PATH_VCF/${TUMOR_NAME}_somatic.vcf.indel -output-file $PATH_VCF/${TUMOR_NAME}_somatic.vcf.snp.Somatic.hc.filter || exit_abnormal_code "Unable to filter somatic varscan variants" 112
+$PATH_JAVA -jar $PATH_VARSCAN compare $PATH_VCF/${TUMOR_NAME}_somatic.vcf.indel.Somatic.hc $PATH_VCF/${TUMOR_NAME}_somatic.vcf.snp.Somatic.hc.filter merge $PATH_VCF/${TUMOR_NAME}_somatic_merge.vcf || exit_abnormal_code "Unable to merge varscan variants" 113
 $PATH_JAVA -jar $PATH_VARSCAN compare $PATH_VCF/${TUMOR_NAME}_somatic_merge.vcf $PATH_VCF/${TUMOR_NAME}_pass.vcf intersect $PATH_VCF/${TUMOR_NAME}_intersect.vcf || exit_abnormal_code "Unable to compare and intersect vcf" 114
 
 echo "VCF final creation"
