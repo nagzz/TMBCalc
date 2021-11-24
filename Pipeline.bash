@@ -219,12 +219,12 @@ awk -F '\t' '{if($0 ~ /\#/) print; else if($7 == "PASS") print}' $PATH_VCF/${TUM
 
 echo "Variant calling with VarScan"
 
-samtools mpileup -B -f $ifolder/${index}.fa -Q 25 -L 250 -d 250 $PATH_BAM_NORMAL/${NORMAL_NAME}_nodup.bam $PATH_BAM_TUMOR/${TUMOR_NAME}_nodup.bam | java -jar $PATH_VARSCAN/VarScan.v2.4.3.jar somatic -mpileup $PATH_VCF/${TUMOR_NAME}_somatic.vcf --min-var-freq 0.10 --strand-filter 1 --output-vcf 1 || exit_abnormal_code "Unable to call variants with Varscan" 109
-$PATH_JAVA -jar $PATH_VARSCAN/VarScan.v2.4.3.jar processSomatic $PATH_VCF/${TUMOR_NAME}_somatic.vcf.indel || exit_abnormal_code "Unable to process somatic indel variants" 110
-$PATH_JAVA -jar $PATH_VARSCAN/VarScan.v2.4.3.jar processSomatic $PATH_VCF/${TUMOR_NAME}_somatic.vcf.snp || exit_abnormal_code "Unable to process somatic snp variants" 111
-$PATH_JAVA -jar $PATH_VARSCAN/VarScan.v2.4.3.jar somaticFilter $PATH_VCF/${TUMOR_NAME}_somatic.vcf..snp.Somatic.hc -min-var-freq 0.10 -indel-file $PATH_VCF/${TUMOR_NAME}.indel.vcf -output-file $PATH_VCF/${TUMOR_NAME}_somatic.snp.Somatic.hc.filter.vcf || exit_abnormal_code "Unable to filter somatic varscan variants" 112
-$PATH_JAVA -jar $PATH_VARSCAN/VarScan.v2.4.3.jar compare $PATH_VCF/${TUMOR_NAME}_somatic.indel.Somatic.hc.vcf $PATH_VCF/${TUMOR_NAME}_somatic.snp.Somatic.hc.filter.vcf merge $PATH_VCF/${TUMOR_NAME}_somatic_merge.vcf || exit_abnormal_code "Unable to merge varscan variants" 113
-$PATH_JAVA -jar $PATH_VARSCAN/VarScan.v2.4.3.jar compare $PATH_VCF/${TUMOR_NAME}_somatic_merge.vcf $PATH_VCF/${TUMOR_NAME}_pass.vcf intersect $PATH_VCF/${TUMOR_NAME}_intersect.vcf || exit_abnormal_code "Unable to compare and intersect vcf" 114
+samtools mpileup -B -f $ifolder/${index}.fa -Q 25 -L 250 -d 250 $PATH_BAM_NORMAL/${NORMAL_NAME}_nodup.bam $PATH_BAM_TUMOR/${TUMOR_NAME}_nodup.bam | $PATH_JAVA -jar $PATH_VARSCAN somatic -mpileup $PATH_VCF/${TUMOR_NAME}_somatic.vcf --min-var-freq 0.10 --strand-filter 1 --output-vcf 1 || exit_abnormal_code "Unable to call variants with Varscan" 109
+$PATH_JAVA -jar $PATH_VARSCAN processSomatic $PATH_VCF/${TUMOR_NAME}_somatic.vcf.indel || exit_abnormal_code "Unable to process somatic indel variants" 110
+$PATH_JAVA -jar $PATH_VARSCAN processSomatic $PATH_VCF/${TUMOR_NAME}_somatic.vcf.snp || exit_abnormal_code "Unable to process somatic snp variants" 111
+$PATH_JAVA -jar $PATH_VARSCAN somaticFilter $PATH_VCF/${TUMOR_NAME}_somatic.vcf..snp.Somatic.hc -min-var-freq 0.10 -indel-file $PATH_VCF/${TUMOR_NAME}.indel.vcf -output-file $PATH_VCF/${TUMOR_NAME}_somatic.snp.Somatic.hc.filter.vcf || exit_abnormal_code "Unable to filter somatic varscan variants" 112
+$PATH_JAVA -jar $PATH_VARSCAN compare $PATH_VCF/${TUMOR_NAME}_somatic.indel.Somatic.hc.vcf $PATH_VCF/${TUMOR_NAME}_somatic.snp.Somatic.hc.filter.vcf merge $PATH_VCF/${TUMOR_NAME}_somatic_merge.vcf || exit_abnormal_code "Unable to merge varscan variants" 113
+$PATH_JAVA -jar $PATH_VARSCAN compare $PATH_VCF/${TUMOR_NAME}_somatic_merge.vcf $PATH_VCF/${TUMOR_NAME}_pass.vcf intersect $PATH_VCF/${TUMOR_NAME}_intersect.vcf || exit_abnormal_code "Unable to compare and intersect vcf" 114
 
 echo "VCF final creation"
 perl $PATH_ANNOVAR/convert2annovar.pl -format vcf4old $PATH_VCF/${TUMOR_NAME}_intersect.vcf -outfile $PATH_VCF/${TUMOR_NAME}_final.vcf -includeinfo
