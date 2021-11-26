@@ -144,7 +144,7 @@ else
   samtools faidx hg38.fa
   $PATH_JAVA -jar $PATH_PROGRAM/picard.jar CreateSequenceDictionary R=hg38.fa O=hg38.dict
   wget https://ftp.ncbi.nlm.nih.gov/snp/latest_release/VCF/GCF_000001405.39.gz
-  wget https://ftp.ncbi.nlm.nih.gov/snp/latest_release/VCF/GCF_000001405.39.gz.tbi #Questo non funziona, dunque o trovo il dbsnp o metto quello su github. Magari avevo trovato un link su annovar stesso?
+  wget https://ftp.ncbi.nlm.nih.gov/snp/latest_release/VCF/GCF_000001405.39.gz.tbi #Questo non funziona, dunque o trovo il dbsnp o metto quello su github. Magari avevo trovato un link su annovar stesso?  #https://ftp.ncbi.nlm.nih.gov/snp/organisms/human_9606_b151_GRCh38p7/VCF/00-All.vcf.gz
   gunzip GCF_000001405.39.gz
   mv GCF_000001405.39 GCF_000001405.hg38
   mv GCF_000001405.39 $PATH_ANNOVAR/humandb
