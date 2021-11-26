@@ -232,7 +232,7 @@ perl $PATH_ANNOVAR/convert2annovar.pl -format vcf4old $PATH_VCF/${TUMOR_NAME}_in
 echo "Annovar annotation"
 cd $PATH_ANNOVAR
 
-perl annotate_variation.pl $PATH_VCF/${TUMOR_NAME}_final.vcf ./ -vcfdbfile humandb/GCF_000001405.$index -buildver $index -filter -dbtype vcf
+perl annotate_variation.pl $PATH_VCF/${TUMOR_NAME}_final.vcf ./ -vcfdbfile humandb/snp151_$index.vcf -buildver $index -filter -dbtype vcf
 perl annotate_variation.pl -filter -dbtype cosmic70 -buildver  $index -out $PATH_TXT/${TUMOR_NAME} $PATH_VCF/${TUMOR_NAME}_final.vcf.${index}_vcf_filtered humandb/
 perl annotate_variation.pl -filter -dbtype esp6500siv2_all -buildver $index -out $PATH_TXT/${TUMOR_NAME} $PATH_TXT/${TUMOR_NAME}.${index}_cosmic70_filtered humandb/
 perl annotate_variation.pl -filter -dbtype 1000g2015aug_all -buildver $index -out $PATH_TXT/$TUMOR_NAME $PATH_TXT/${TUMOR_NAME}.${index}_esp6500siv2_all_filtered humandb/
@@ -243,3 +243,9 @@ sed '/^[[:blank:]]*$/d' $PATH_TXT/*.${index}_ALL.sites.2015_08_filtered | wc -l 
 
 rm -r $PATH_BAM_NORMAL
 rm -r $PATH_BAM_TUMOR
+
+#Inserire in un ONCOREPORT_SCRIPT_PATH
+# a <- scan("/home/gprivitera/analisi_TMB/fastq/output/txt/TCGA-AG-3599-01A1.txt", character(), quote = "", quiet=TRUE)
+# a <- as.numeric(a)
+# b <- a/2
+# write.table(b, "/home/gprivitera/analisi_TMB/TMB_value.txt", sep="\t", quote=FALSE, row.names = FALSE, col.names = FALSE)

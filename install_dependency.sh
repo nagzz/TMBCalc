@@ -125,11 +125,12 @@ if [ $index == "hg19" ]; then
   gunzip hg19.fa.gz
   samtools faidx hg19.fa
   $PATH_JAVA -jar $PATH_PROGRAM/picard.jar CreateSequenceDictionary R=hg19.fa O=hg19.dict
-  wget https://ftp.ncbi.nlm.nih.gov/snp/latest_release/VCF/GCF_000001405.25.gz
-  wget https://ftp.ncbi.nlm.nih.gov/snp/latest_release/VCF/GCF_000001405.25.gz.tbi
-  gunzip GCF_000001405.25.gz
-  mv GCF_000001405.25 GCF_000001405.hg19
-  mv GCF_000001405.25 $PATH_ANNOVAR/humandb
+  cd $PATH_ANNOVAR/humandb
+  wget https://ftp.ncbi.nlm.nih.gov/snp/organisms/human_9606_b151_GRCh37p13/VCF/00-All.vcf.gz
+  wget https://ftp.ncbi.nlm.nih.gov/snp/organisms/human_9606_b151_GRCh37p13/VCF/00-All.vcf.gz.tbi
+  gunzip 00-All.vcf.gz
+  mv 00-All.vcf snp151_hg19.vcf
+  mv 00-All.vcf.gz.tbi snp151_hg19.vcf.gz.tbi
 else
   cd $PATH_INDEX
   wget https://genome-idx.s3.amazonaws.com/bt/GRCh38_noalt_as.zip
@@ -143,12 +144,13 @@ else
   mv GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta.gz hg38.fa
   samtools faidx hg38.fa
   $PATH_JAVA -jar $PATH_PROGRAM/picard.jar CreateSequenceDictionary R=hg38.fa O=hg38.dict
-  wget https://ftp.ncbi.nlm.nih.gov/snp/latest_release/VCF/GCF_000001405.39.gz
-  wget https://ftp.ncbi.nlm.nih.gov/snp/latest_release/VCF/GCF_000001405.39.gz.tbi #Questo non funziona, dunque o trovo il dbsnp o metto quello su github. Magari avevo trovato un link su annovar stesso?  #https://ftp.ncbi.nlm.nih.gov/snp/organisms/human_9606_b151_GRCh38p7/VCF/00-All.vcf.gz
-  gunzip GCF_000001405.39.gz
-  mv GCF_000001405.39 GCF_000001405.hg38
-  mv GCF_000001405.39 $PATH_ANNOVAR/humandb
-cd
+  cd $PATH_ANNOVAR/humandb
+  wget https://ftp.ncbi.nlm.nih.gov/snp/organisms/human_9606_b151_GRCh38p7/VCF/00-All.vcf.gz
+  wget https://ftp.ncbi.nlm.nih.gov/snp/organisms/human_9606_b151_GRCh38p7/VCF/00-All.vcf.gz.tbi
+  gunzip 00-All.vcf.gz
+  mv 00-All.vcf snp151_hg38.vcf
+  mv 00-All.vcf.gz.tbi snp151_hg38.vcf.gz.tbi
+cd ../..
 fi
 
 cd $PATH_ANNOVAR
