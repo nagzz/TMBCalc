@@ -58,11 +58,11 @@ if [ $index == "hg19" ]; then
   java -jar /program/picard.jar CreateSequenceDictionary R=hg19.fa O=hg19.dict
   cd ..
   cd $PATH_ANNOVAR/humandb
-  wget https://ftp.ncbi.nlm.nih.gov/snp/latest_release/VCF/GCF_000001405.25.gz #o scaricare su annovar o lasciarlo dov'è
-  wget https://ftp.ncbi.nlm.nih.gov/snp/latest_release/VCF/GCF_000001405.25.gz.tbi
-  gunzip GCF_000001405.25.gz
-  mv GCF_000001405.25 GCF_000001405.hg19
-  mv GCF_000001405.hg19
+  wget https://ftp.ncbi.nlm.nih.gov/snp/organisms/human_9606_b151_GRCh37p13/VCF/00-All.vcf.gz
+  wget https://ftp.ncbi.nlm.nih.gov/snp/organisms/human_9606_b151_GRCh37p13/VCF/00-All.vcf.gz.tbi
+  gunzip 00-All.vcf.gz
+  mv 00-All.vcf snp151_hg19.vcf
+  mv 00-All.vcf.gz.tbi snp151_hg19.vcf.gz.tbi
   cd ..
 else
   cd index
@@ -80,11 +80,11 @@ else
   rm GRCh38_noalt_as.zip
   cd ..
   cd $PATH_ANNOVAR/humandb
-  wget https://ftp.ncbi.nlm.nih.gov/snp/latest_release/VCF/GCF_000001405.39.gz
-  wget https://ftp.ncbi.nlm.nih.gov/snp/latest_release/VCF/GCF_000001405.39.gz.tbi
-  gunzip GCF_000001405.39.gz
-  mv GCF_000001405.39 GCF_000001405.hg38
-  mv GCF_000001405.hg38 $PATH_ANNOVAR/humandb
+  wget https://ftp.ncbi.nlm.nih.gov/snp/organisms/human_9606_b151_GRCh38p7/VCF/00-All.vcf.gz
+  wget https://ftp.ncbi.nlm.nih.gov/snp/organisms/human_9606_b151_GRCh38p7/VCF/00-All.vcf.gz.tbi
+  gunzip 00-All.vcf.gz
+  mv 00-All.vcf snp151_hg38.vcf
+  mv 00-All.vcf.gz.tbi snp151_hg38.vcf.gz.tbi
   cd ..
 fi
 

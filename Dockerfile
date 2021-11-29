@@ -5,7 +5,6 @@ RUN apt-get -y install unzip
 RUN apt-get -y install bowtie2
 RUN apt-get update --fix-missing
 RUN apt-get -y install python3-pip
-# RUN pip3 install --user --upgrade cutadapt
 RUN apt-get -y install cutadapt
 RUN apt-get -y install curl
 RUN apt-get -y install tar
@@ -60,10 +59,12 @@ RUN mkdir index
 RUN apt-get -y install nano
 RUN apt-get -y install apt-utils --fix-missing
 RUN rm gatk-4.1.0.0.zip
+RUN rm master.zip
+RUN rm trim_galore.tar.gz
+RUN rm -r varscan-master
 COPY Pipeline.bash /
 COPY index_creation.bash /
-
-#Inserire rimozione
+COPY TMB_calculation.R /
 
 
 ENTRYPOINT [ "bash" ]

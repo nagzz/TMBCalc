@@ -1,8 +1,5 @@
 #!/bin/bash
 
-#inserire l'informazione sul gzip o l'inserimento passo per passo dei campioni
-#come paramentro anche index type
-#il nome del file lo deriviamo da esso o lo inseriamo?
 usage() {
   echo "Usage: $0 [-t/-tumor tumor sample]
   [-n/-normal normal sample ]
@@ -44,7 +41,7 @@ while [ -n "$1" ]; do
     echo "The value provided for normal sample name is $normal"
     shift
     ;;
-  -input | -i)  #Si suppone che tumor e normal si trovino nella stessa cartella di input
+  -input | -i)
     input="$2"
     echo "The value provided for input folder is $input"
     shift
@@ -105,14 +102,19 @@ while [ -n "$1" ]; do
 done
 
 
-if [[ -z "$input" ]] || [[ -z "$tumor" ]] || [[ -z "$normal" ]] || [[ -z "$index" ]] || [[ -z "$ifolder" ]] || [[ -z "$program" ]] || [[ -z "$paired" ]] || [[ -z "$type" ]] || [[ -z "$jv" ]] || [[ -z "$threads" ]]; then
+if [[ -z "$input" ]] || [[ -z "$tumor" ]] || [[ -z "$normal" ]] || [[ -z "$index" ]] || [[ -z "$ifolder" ]] || [[ -z "$program" ]] || [[ -z "$type" ]] || [[ -z "$jv" ]] || [[ -z "$threads" ]]; then
   exit_abnormal_usage "All parameters must be passed"
 fi
 
-#Paired lo dovrei segnare da passare solo se è passato fastq
 
+if [[ "$type" == "fastq" ]]; then
+  if [[ -z "$paired" ]]; then
+    exit_abnormal_usage "All parameters must be passed"
+  fi
+fi
 
 PATH_OUTPUT=$input/output
+PATH_TRIM=$PATH_OUTPUT/trim
 PATH_SAM_TUMOR=$PATH_OUTPUT/sam_tumor
 PATH_SAM_NORMAL=$PATH_OUTPUT/sam_normal
 PATH_BAM_TUMOR=$PATH_OUTPUT/bam_tumor
@@ -147,24 +149,22 @@ if [[ "$type" == "fastq" ]]; then
   if [[ "$paired" == "yes" ]]; then
     echo "Trimming"
     echo "Tumor trimming"
-    $PATH_PROGRAM/TrimGalore-0.6.6/trim_galore -j "$RT" -o $input --dont_gzip --paired "$input/${TUMOR_NAME}_1.fastq" "$input/${TUMOR_NAME}_2.fastq" || exit_abnormal_code "Unable to trim input file" 101
+    $PATH_PROGRAM/TrimGalore-0.6.6/trim_galore -j "$RT" -o $PATH_TRIM --dont_gzip --paired "$input/${TUMOR_NAME}_1.fastq" "$input/${TUMOR_NAME}_2.fastq" || exit_abnormal_code "Unable to trim input file" 101
     echo "Normal trimming"
-    $PATH_PROGRAM/TrimGalore-0.6.6/trim_galore -j "$RT" -o $input --dont_gzip --paired "$input/${NORMAL_NAME}_1.fastq" "$input/${NORMAL_NAME}_2.fastq" || exit_abnormal_code "Unable to trim input file" 101
+    $PATH_PROGRAM/TrimGalore-0.6.6/trim_galore -j "$RT" -o $PATH_TRIM --dont_gzip --paired "$input/${NORMAL_NAME}_1.fastq" "$input/${NORMAL_NAME}_2.fastq" || exit_abnormal_code "Unable to trim input file" 101
     echo "Tumor Alignment"
-  #Potrei togliere il path delle folder che tanto nel crea dipendenze sono create nel proj path e fare inserire solo quello
-    bowtie2 -x $ifolder/${index}/$index -p $RT -1 $input/${TUMOR_NAME}_val_1.fq -2 $input/${TUMOR_NAME}_val_2.fq -S $PATH_SAM_TUMOR/${TUMOR_NAME}.sam || exit_abnormal_code "Unable to align input file" 102
+    bowtie2 -x $ifolder/${index}/$index -p $RT -1 $PATH_TRIM/${TUMOR_NAME}_val_1.fq -2 $PATH_TRIM/${TUMOR_NAME}_val_2.fq -S $PATH_SAM_TUMOR/${TUMOR_NAME}.sam || exit_abnormal_code "Unable to align input file" 102
     echo "Normal alignment"
-    bowtie2 -x $ifolder/${index}/$index -p $RT -1 $input/${NORMAL_NAME}_val_1.fq -2 $input/${NORMAL_NAME}_val_2.fq -S $PATH_SAM_NORMAL/${NORMAL_NAME}.sam || exit_abnormal_code "Unable to align input file" 102
+    bowtie2 -x $ifolder/${index}/$index -p $RT -1 $PATH_TRIM/${NORMAL_NAME}_val_1.fq -2 $PATH_TRIM/${NORMAL_NAME}_val_2.fq -S $PATH_SAM_NORMAL/${NORMAL_NAME}.sam || exit_abnormal_code "Unable to align input file" 102
   elif [[ "$paired" == "no" ]]; then
     echo "Tumor trimming"
-    $PATH_PROGRAM/TrimGalore-0.6.6/trim_galore -j "$RT" -o $input --dont_gzip "$input/${TUMOR_NAME}.fastq" || exit_abnormal_code "Unable to trim input file" 101
+    $PATH_PROGRAM/TrimGalore-0.6.6/trim_galore -j "$RT" -o $PATH_TRIM --dont_gzip "$input/${TUMOR_NAME}.fastq" || exit_abnormal_code "Unable to trim input file" 101
     echo "Normal trimming"
-    $PATH_PROGRAM/TrimGalore-0.6.6/trim_galore -j "$RT" -o $input --dont_gzip "$input/${NORMAL_NAME}.fastq" || exit_abnormal_code "Unable to trim input file" 101
+    $PATH_PROGRAM/TrimGalore-0.6.6/trim_galore -j "$RT" -o $PATH_TRIM --dont_gzip "$input/${NORMAL_NAME}.fastq" || exit_abnormal_code "Unable to trim input file" 101
     echo "Tumor Alignment"
-    bowtie2 -p "$threads" -x "$ifolder/${index}/$index" -U "$PATH_TRIM/${TUMOR_NAME}_trimmed.fq" -S "$PATH_SAM_TUMOR/${TUMOR_NAME}.sam" || exit_abnormal_code "Unable to align input file" 102  #Threads deve diventare RT
-    #Creare una trimmed path dove inserire i trimmati o cambiare in input la path di -U
+    bowtie2 -p "$RT" -x "$ifolder/${index}/$index" -U "$PATH_TRIM/${TUMOR_NAME}_trimmed.fq" -S "$PATH_SAM_TUMOR/${TUMOR_NAME}.sam" || exit_abnormal_code "Unable to align input file" 102
     echo "Normal Alignment"
-    bowtie2 -p "$threads" -x "$ifolder/${index}/$index" -U "$PATH_TRIM/${NORMAL_NAME}_trimmed.fq" -S "$PATH_SAM_NORMAL/${NORMAL_NAME}.sam" || exit_abnormal_code "Unable to align input file" 102
+    bowtie2 -p "$RT" -x "$ifolder/${index}/$index" -U "$PATH_TRIM/${NORMAL_NAME}_trimmed.fq" -S "$PATH_SAM_NORMAL/${NORMAL_NAME}.sam" || exit_abnormal_code "Unable to align input file" 102
   fi
     echo "Add or Replace Read Groups on Tumor"
     $PATH_JAVA -jar $PATH_PICARD AddOrReplaceReadGroups I=$PATH_SAM_TUMOR/${TUMOR_NAME}.sam O=$PATH_BAM_TUMOR/${TUMOR_NAME}_annotate.bam RGID=0 RGLB=lib1 RGPL=illumina RGPU=SN166 RGSM=$TUMOR_NAME CREATE_INDEX=TRUE || exit_abnormal_code "Unable to Add or Replace Read Groups on Tumor" 103
@@ -239,13 +239,8 @@ perl annotate_variation.pl -filter -dbtype 1000g2015aug_all -buildver $index -ou
 perl annotate_variation.pl -dbtype refGene -buildver $index -out $PATH_TXT/${TUMOR_NAME} $PATH_TXT/${TUMOR_NAME}.${index}_ALL.sites.2015_08_filtered -otherinfo humandb/
 
 sed '/^[[:blank:]]*$/d' $PATH_TXT/*.${index}_ALL.sites.2015_08_filtered | wc -l >  $PATH_TXT/${TUMOR_NAME}.txt
-#Aggiungere script R con grandezza arbitraria esoma
+
+Rscript TMB_calculation.R $PATH_TXT $exome
 
 rm -r $PATH_BAM_NORMAL
 rm -r $PATH_BAM_TUMOR
-
-#Inserire in un ONCOREPORT_SCRIPT_PATH
-# a <- scan("/home/gprivitera/analisi_TMB/fastq/output/txt/TCGA-AG-3599-01A1.txt", character(), quote = "", quiet=TRUE)
-# a <- as.numeric(a)
-# b <- a/2
-# write.table(b, "/home/gprivitera/analisi_TMB/TMB_value.txt", sep="\t", quote=FALSE, row.names = FALSE, col.names = FALSE)

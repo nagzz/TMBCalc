@@ -1,18 +1,4 @@
 #!/bin/bash
-#Before launching the install dependency install Annovar!
-#Va bene perchi ha i sudo sennò cercare i corrispettivi di anaconda e creare una divisione tra sudo e anaconda come paramentro
-#Parametro per CrossMap
-#Path per dove creare index e programmi
-#Creareindex si o no? dipende dall'utente, magari li ha
-#Prima installare sudo apt install -y openjdk-8-jre oppure
-# https://download.java.net/openjdk/jdk8u41/ri/openjdk-8u41-b04-linux-x64-14_jan_2020.tar.gz
-#tar xzf openjdk-8u41-b04-linux-x64-14_jan_2020.tar.gz
-#cd java-se-8u41-ri/bin/java
-#Se java 8 installato con sudo mettere in path java solo java
-#tar xzf annovar.latest.tar.gz
-#if per hg19/hg38/both
-#wget http://hgdownload.soe.ucsc.edu/goldenPath/hg19/liftOver/hg19ToHg38.over.chain.gz
-#Pensare a che fare con lo zip
 
 usage() {
   echo "Usage: $0 [-p/-path path of the project]
