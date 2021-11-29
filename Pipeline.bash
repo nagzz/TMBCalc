@@ -10,7 +10,8 @@ usage() {
   [-ifl/-ifolder index folder]
   [-p/-program program folder]
   [-j/-jv java]
-  [-th/-threads number of bowtie2 threads, leave 1 if you are uncertain]" 1>&2
+  [-th/-threads number of bowtie2 threads, leave 1 if you are uncertain]
+  [-e/-exome exome length in Megabase (Mb)]" 1>&2
 }
 
 exit_abnormal_code() {
@@ -93,6 +94,11 @@ while [ -n "$1" ]; do
     fi
     shift
     ;;
+  -exome | -e)
+      exome="$2"
+      echo "The value provided for exome length is $exome"
+      shift
+    ;;
   *)
     exit_abnormal_usage "Error: invalid parameter \"$1\"."
     shift
@@ -130,6 +136,7 @@ PATH_VARSCAN=$PATH_PROGRAM/VarScan.v2.4.3.jar
 PATH_ANNOVAR=$PATH_PROGRAM/annovar
 
 [[ ! -d $PATH_OUTPUT ]] && mkdir "$PATH_OUTPUT"
+[[ ! -d $PATH_TRIM ]] && mkdir "$PATH_TRIM"
 [[ ! -d $PATH_SAM_TUMOR ]] && mkdir "$PATH_SAM_TUMOR"
 [[ ! -d $PATH_SAM_NORMAL ]] && mkdir "$PATH_SAM_NORMAL"
 [[ ! -d $PATH_BAM_TUMOR ]] && mkdir "$PATH_BAM_TUMOR"

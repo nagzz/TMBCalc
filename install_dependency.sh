@@ -107,6 +107,8 @@ if [ $index == "hg19" ]; then
   cd $PATH_INDEX
   wget https://genome-idx.s3.amazonaws.com/bt/hg19.zip
   unzip hg19.zip
+  mkdir hg19
+  mv hg19.* hg19/
   wget http://hgdownload.cse.ucsc.edu/goldenpath/hg19/bigZips/hg19.fa.gz
   gunzip hg19.fa.gz
   samtools faidx hg19.fa
