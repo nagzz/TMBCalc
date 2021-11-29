@@ -82,13 +82,13 @@ The pipeline needs several parameters:
 - -pr yes if you have paired-end samples, no if samples are single-end
 - -i the input files folder
 - -id the human index choosen. It can be hg19 or hg38.
-- -if the path of the folder where the index have been downloaded
+- -ifl the path of the folder where the index have been downloaded
 - -p the path of the folder where the program have been downloaded
 - -j open jdk or java path
 - -th threads number, put 1 if you are not sure.
 
 ```
-bash Pipeline.bash -t tumor_sample_name -n normal_sample_name -tp bam -i /home/ubuntu/input -pr no -id hg38 -if /index/ -p /program/ -j /usr/lib/jvm/java-8-openjdk-amd64/bin/java -th 1
+bash Pipeline.bash -t tumor_sample_name -n normal_sample_name -tp bam -i /home/ubuntu/input -pr no -id hg38 -ifl /index/ -p /program/ -j /usr/lib/jvm/java-8-openjdk-amd64/bin/java -th 1
 ```
 
 
