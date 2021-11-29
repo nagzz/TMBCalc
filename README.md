@@ -91,5 +91,9 @@ The pipeline needs several parameters:
 bash Pipeline.bash -t tumor_sample_name -n normal_sample_name -tp bam -i /home/ubuntu/input -pr no -id hg38 -ifl /index/ -p /program/ -j /usr/lib/jvm/java-8-openjdk-amd64/bin/java -th 1
 ```
 
+# Output
 
+You will found several output all in the folder "txt" in your path project folder.
+First of all, the TMB value txt where you will found the value calculated with the exome size supplied.
+Secondly, you will found a txt called with your tumor name .variant_function with all the mutations that contribute to the TMB calculation with their specific function. 
 
