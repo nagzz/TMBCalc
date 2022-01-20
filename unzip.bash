@@ -28,22 +28,22 @@ while [ -n "$1" ]; do
   case "$1" in
   -fastq1 | -fq1)
     fastq1="$2"
-    echo "The value provided for annovar path is $fastq1"
+    echo "The value provided for fastq1 is $fastq1"
     shift
     ;;
   -fastq1 | -fq2)
     fastq2="$2"
-    echo "The value provided for annovar path is $fastq2"
+    echo "The value provided for fastq2 is $fastq2"
     shift
     ;;
   -normal1 | -nm1)
     normal1="$2"
-    echo "The value provided for annovar path is $normal1"
+    echo "The value provided for normal1 is $normal1"
     shift
     ;;
   -normal2 | -nm2)
     normal2="$2"
-    echo "The value provided for annovar path is $normal2"
+    echo "The value provided for normal2 is $normal2"
     shift
     ;;
   *)
