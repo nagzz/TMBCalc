@@ -28,7 +28,7 @@ Pull the pipeline image using the command
    docker pull grete/tmbcalc:latest
 ```
 
-Run the container inserting in it your project path, your input file folder path if it is not included in the project path and your annovar path.
+Run the container inserting in it: your project path, your input file folder path (if it is not already included in the project path) and your annovar path.
 Example:
 ```
 docker run -v /home/ubuntu/Annovar:/annovar -v /home/ubuntu/project_path:/project_path
@@ -55,7 +55,7 @@ https://download.java.net/openjdk/jdk8u41/ri/openjdk-8u41-b04-linux-x64-14_jan_2
 tar xzf dk.tar.gz
 ```
 Moreover, if you do not own root permission install conda and create a new enviroment before use the file "install_dependency.sh"
-If you have not install conda:
+Conda can be installed from:
 https://conda.io/projects/conda/en/latest/user-guide/install/index.html
 
 Now you can install the dependencies specifying 
@@ -63,7 +63,7 @@ Now you can install the dependencies specifying
 - -a the annovar folder
 - -i the index that you wanna use. Can be hg19 (GRCh37) or hg38 (GRCh38). If you do not know which one to use, hg38 is the recommended one.
 - -pr yes if you have the root permission, no if you do not have it. If you select no all the tools will be installed through conda.
-- -jv the java pathway or simply java if you have the version 8 installed in your computer.
+- -jv the java pathway or simply the word "java" if you have the version 8 installed in your computer.
 
 Here an example:
 
@@ -71,8 +71,7 @@ Here an example:
 bash install_dependency.sh -p /home/ubuntu/project_path -a /home/ubuntu/Annovar -i hg38 -pr yes -jv /home/ubuntu/jdkfolder/bin/java
 ```
 
-This step can take a while since index should be downloaded. 
-In the Project path will be created two folder: index and program.
+This step can take a while since index should be downloaded. It will also create the folders index and program in your project path.
 
 ### Pipeline usage
 
@@ -95,7 +94,7 @@ bash Pipeline.bash -t tumor_sample_name -n normal_sample_name -tp bam -i /home/u
 
 # Output
 
-You will found several output all in the folder "txt" in your path project folder.
-First of all, the TMB value txt where you will found the value calculated with the exome size supplied.
-Secondly, you will found a txt called with your tumor name .variant_function with all the mutations that contribute to the TMB calculation with their specific function. 
+You will find several outputs in the folder "txt" placed in your path project folder.
+First of all, the TMB value txt file where you will find the value calculated with the exome size supplied.
+Secondly, you will find a txt called with your tumor name plus ".variant_function" with all the mutations that contribute to the TMB calculation with their specific function. 
 
