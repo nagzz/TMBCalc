@@ -21,6 +21,7 @@ https://annovar.openbioinformatics.org/en/latest/user-guide/download/
 ## With Docker
 Install docker through 
 https://docs.docker.com/get-docker/
+
 Pull the pipeline image using the command
 
 ```
