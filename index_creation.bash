@@ -44,24 +44,26 @@ while [ -n "$1" ]; do
   shift
 done
 
-#!/bin/bash
-
 PATH_ANNOVAR=$annovar
 
 if [ $index == "hg19" ]; then
   cd index
   wget https://genome-idx.s3.amazonaws.com/bt/hg19.zip
   unzip hg19.zip
+  mkdir hg19
+  mv hg19.* hg19/
   wget http://hgdownload.cse.ucsc.edu/goldenpath/hg19/bigZips/hg19.fa.gz
   gunzip hg19.fa.gz
   samtools faidx hg19.fa
   java -jar /program/picard.jar CreateSequenceDictionary R=hg19.fa O=hg19.dict
-  wget https://ftp.ncbi.nlm.nih.gov/snp/latest_release/VCF/GCF_000001405.25.gz
-  wget https://ftp.ncbi.nlm.nih.gov/snp/latest_release/VCF/GCF_000001405.25.gz.tbi
-  gunzip GCF_000001405.25.gz
-  mv GCF_000001405.25 GCF_000001405.hg19
-  mv GCF_000001405.hg19 $PATH_ANNOVAR/humandb
-  cd
+  cd ..
+  cd $PATH_ANNOVAR/humandb
+  wget https://ftp.ncbi.nlm.nih.gov/snp/organisms/human_9606_b151_GRCh37p13/VCF/00-All.vcf.gz
+  wget https://ftp.ncbi.nlm.nih.gov/snp/organisms/human_9606_b151_GRCh37p13/VCF/00-All.vcf.gz.tbi
+  gunzip 00-All.vcf.gz
+  mv 00-All.vcf snp151_hg19.vcf
+  mv 00-All.vcf.gz.tbi snp151_hg19.vcf.gz.tbi
+  cd ..
 else
   cd index
   wget https://genome-idx.s3.amazonaws.com/bt/GRCh38_noalt_as.zip
@@ -70,16 +72,20 @@ else
   cd hg38
   rename 's/^GRCh38_noalt_as\./hg38./' GRCh38_noalt_as.*
   cd ..
-  wget https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/hg38.fa.gz
-  gunzip hg38.fa.gz
+  wget https://www.encodeproject.org/files/GRCh38_no_alt_analysis_set_GCA_000001405.15/@@download/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta.gz
+  gunzip GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta.gz
+  mv GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta.gz hg38.fa
   samtools faidx hg38.fa
   java -jar /program/picard.jar CreateSequenceDictionary R=hg38.fa O=hg38.dict
-  wget https://ftp.ncbi.nlm.nih.gov/snp/latest_release/VCF/GCF_000001405.39.gz
-  wget https://ftp.ncbi.nlm.nih.gov/snp/latest_release/VCF/GCF_000001405.39.gz.tbi
-  gunzip GCF_000001405.39.gz
-  mv GCF_000001405.39 GCF_000001405.hg38
-  mv GCF_000001405.hg38 $PATH_ANNOVAR/humandb
   rm GRCh38_noalt_as.zip
+  cd ..
+  cd $PATH_ANNOVAR/humandb
+  wget https://ftp.ncbi.nlm.nih.gov/snp/organisms/human_9606_b151_GRCh38p7/VCF/00-All.vcf.gz
+  wget https://ftp.ncbi.nlm.nih.gov/snp/organisms/human_9606_b151_GRCh38p7/VCF/00-All.vcf.gz.tbi
+  gunzip 00-All.vcf.gz
+  mv 00-All.vcf snp151_hg38.vcf
+  mv 00-All.vcf.gz.tbi snp151_hg38.vcf.gz.tbi
+  cd ..
 fi
 
 cd $PATH_ANNOVAR
