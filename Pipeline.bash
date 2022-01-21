@@ -11,7 +11,8 @@ usage() {
   [-p/-program program folder]
   [-j/-jv java]
   [-th/-threads number of bowtie2 threads, leave 1 if you are uncertain]
-  [-e/-exome exome length in Megabase (Mb)]" 1>&2
+  [-e/-exome exome length in Megabase (Mb)]
+  [-a/-annovar annovar folder path]" 1>&2
 }
 
 exit_abnormal_code() {
@@ -95,8 +96,23 @@ while [ -n "$1" ]; do
     shift
     ;;
   -exome | -e)
-      exome="$2"
-      echo "The value provided for exome length is $exome"
+    exome="$2"
+    re_isanum='^[0-9]+$'
+    echo "The value provided for exome length is $exome"
+    if ! [[ $exome =~ $re_isanum ]] ; then
+      echo "Error: Exome length must be a positive, whole number."
+      exit_abnormal
+      exit 1
+    elif [ $exome -eq "0" ]; then
+      echo "Error: Exome length must be greater than zero."
+      exit_abnormal
+      exit 1
+    fi
+    shift
+    ;;
+  -annovar | -a)
+      annovar="$2"
+      echo "The value provided for Annovar path is $annovar"
       shift
     ;;
   *)
@@ -108,7 +124,7 @@ while [ -n "$1" ]; do
 done
 
 
-if [[ -z "$input" ]] || [[ -z "$tumor" ]] || [[ -z "$normal" ]] || [[ -z "$index" ]] || [[ -z "$ifolder" ]] || [[ -z "$program" ]] || [[ -z "$type" ]] || [[ -z "$jv" ]] || [[ -z "$threads" ]]; then
+if [[ -z "$input" ]] || [[ -z "$tumor" ]] || [[ -z "$normal" ]] || [[ -z "$index" ]] || [[ -z "$ifolder" ]] || [[ -z "$program" ]] || [[ -z "$type" ]] || [[ -z "$jv" ]] || [[ -z "$threads" ]] || [[ -z "$annovar" ]]; then
   exit_abnormal_usage "All parameters must be passed"
 fi
 
@@ -133,7 +149,7 @@ PATH_JAVA=$jv
 PATH_PICARD=$PATH_PROGRAM/picard.jar
 PATH_GATK=$PATH_PROGRAM/gatk-package-4.1.0.0-local.jar
 PATH_VARSCAN=$PATH_PROGRAM/VarScan.v2.4.3.jar
-PATH_ANNOVAR=$PATH_PROGRAM/annovar
+PATH_ANNOVAR=$annovar
 
 [[ ! -d $PATH_OUTPUT ]] && mkdir "$PATH_OUTPUT"
 [[ ! -d $PATH_TRIM ]] && mkdir "$PATH_TRIM"
@@ -240,14 +256,14 @@ echo "Annovar annotation"
 cd $PATH_ANNOVAR
 
 perl annotate_variation.pl $PATH_VCF/${TUMOR_NAME}_final.vcf ./ -vcfdbfile humandb/snp151_$index.vcf -buildver $index -filter -dbtype vcf
-perl annotate_variation.pl -filter -dbtype cosmic70 -buildver  $index -out $PATH_TXT/${TUMOR_NAME} $PATH_VCF/${TUMOR_NAME}_final.vcf.${index}_vcf_filtered humandb/
+perl annotate_variation.pl -filter -dbtype cosmic70 -buildver $index -out $PATH_TXT/${TUMOR_NAME} $PATH_VCF/${TUMOR_NAME}_final.vcf.${index}_vcf_filtered humandb/
 perl annotate_variation.pl -filter -dbtype esp6500siv2_all -buildver $index -out $PATH_TXT/${TUMOR_NAME} $PATH_TXT/${TUMOR_NAME}.${index}_cosmic70_filtered humandb/
 perl annotate_variation.pl -filter -dbtype 1000g2015aug_all -buildver $index -out $PATH_TXT/$TUMOR_NAME $PATH_TXT/${TUMOR_NAME}.${index}_esp6500siv2_all_filtered humandb/
 perl annotate_variation.pl -dbtype refGene -buildver $index -out $PATH_TXT/${TUMOR_NAME} $PATH_TXT/${TUMOR_NAME}.${index}_ALL.sites.2015_08_filtered -otherinfo humandb/
 
 sed '/^[[:blank:]]*$/d' $PATH_TXT/*.${index}_ALL.sites.2015_08_filtered | wc -l >  $PATH_TXT/${TUMOR_NAME}.txt
 
-Rscript TMB_calculation.R $PATH_TXT $exome
+Rscript TMB_calculation.R $tumor $PATH_TXT $exome
 
 rm -r $PATH_BAM_NORMAL
 rm -r $PATH_BAM_TUMOR
