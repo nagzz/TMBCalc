@@ -87,9 +87,10 @@ The pipeline needs several parameters:
 - -j open jdk or java path
 - -th threads number, put 1 if you are not sure.
 - -e exome length in Megabase
+- -a Annovar path
 
 ```
-bash Pipeline.bash -t tumor_sample_name -n normal_sample_name -tp bam -i /home/ubuntu/input -pr no -id hg38 -ifl /index/ -p /program/ -j /usr/lib/jvm/java-8-openjdk-amd64/bin/java -th 1 -e 30
+bash Pipeline.bash -t tumor_sample_name -n normal_sample_name -tp bam -i /home/ubuntu/input -pr no -id hg38 -ifl /index/ -p /program/ -j /usr/lib/jvm/java-8-openjdk-amd64/bin/java -th 1 -e 30 -a /home/ubuntu/Annovar
 ```
 
 # Output
