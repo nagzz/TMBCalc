@@ -263,7 +263,7 @@ perl annotate_variation.pl -dbtype refGene -buildver $index -out $PATH_TXT/${TUM
 
 sed '/^[[:blank:]]*$/d' $PATH_TXT/*.${index}_ALL.sites.2015_08_filtered | wc -l >  $PATH_TXT/${TUMOR_NAME}.txt
 
-Rscript TMB_calculation.R $PATH_TXT $exome
+Rscript TMB_calculation.R $tumor $PATH_TXT $exome
 
 rm -r $PATH_BAM_NORMAL
 rm -r $PATH_BAM_TUMOR
